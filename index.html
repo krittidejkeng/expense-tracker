@@ -226,12 +226,18 @@
 
     <!-- Timeline chart -->
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
         <p class="card-title" style="margin:0">Income vs expenses over time</p>
         <div class="type-toggle" id="graph-type-toggle">
           <button class="type-btn income active" onclick="setChartType('line')">Line</button>
           <button class="type-btn expense" onclick="setChartType('bar')">Bar</button>
         </div>
+      </div>
+      <div class="type-toggle" id="granularity-toggle" style="margin-bottom:14px;">
+        <button class="type-btn income active" onclick="setGranularity('daily')">Daily</button>
+        <button class="type-btn income" onclick="setGranularity('weekly')">Weekly</button>
+        <button class="type-btn income" onclick="setGranularity('monthly')">Monthly</button>
+        <button class="type-btn income" onclick="setGranularity('yearly')">Yearly</button>
       </div>
       <div id="chart-timeline-empty" class="empty-msg" style="display:none">No data yet.</div>
       <canvas id="chart-timeline" height="220"></canvas>
@@ -523,14 +529,45 @@
     /* ── Timeline chart ── */
     let timelineChart = null;
     let chartType     = 'line';
+    let granularity   = 'daily';
 
     function setChartType(type) {
       chartType = type;
       document.querySelectorAll('#graph-type-toggle .type-btn').forEach(b => {
-        const isLine = b.textContent.trim() === 'Line';
-        b.classList.toggle('active', (type === 'line') === isLine);
+        b.classList.toggle('active', b.textContent.trim().toLowerCase() === type);
       });
       renderTimelineChart();
+    }
+
+    function setGranularity(g) {
+      granularity = g;
+      document.querySelectorAll('#granularity-toggle .type-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent.trim().toLowerCase() === g);
+      });
+      renderTimelineChart();
+    }
+
+    function getGroupKey(dateStr) {
+      if (granularity === 'daily')   return dateStr;
+      if (granularity === 'monthly') return dateStr.slice(0, 7);
+      if (granularity === 'yearly')  return dateStr.slice(0, 4);
+      // weekly — find the Monday of this date's week
+      const d = new Date(dateStr + 'T12:00:00');
+      const day = d.getDay();
+      d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+      return d.toISOString().slice(0, 10);
+    }
+
+    function formatKey(key) {
+      if (granularity === 'yearly')  return key;
+      if (granularity === 'monthly') return new Date(key + '-02T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      // daily or weekly — show "27 Jun" or "27 Jun 2026" depending on how many years are in data
+      const d = new Date(key + 'T12:00:00');
+      const multiYear = [...new Set(transactions.map(t => t.date.slice(0, 4)))].length > 1;
+      const opts = multiYear
+        ? { day: 'numeric', month: 'short', year: 'numeric' }
+        : { day: 'numeric', month: 'short' };
+      return (granularity === 'weekly' ? 'W ' : '') + d.toLocaleDateString('en-US', opts);
     }
 
     function fmtK(val) {
@@ -540,9 +577,8 @@
     function renderTimelineChart() {
       const canvas   = document.getElementById('chart-timeline');
       const emptyMsg = document.getElementById('chart-timeline-empty');
-      const months   = [...new Set(transactions.map(t => t.date.slice(0, 7)))].sort();
 
-      if (!months.length) {
+      if (!transactions.length) {
         if (timelineChart) { timelineChart.destroy(); timelineChart = null; }
         canvas.style.display   = 'none';
         emptyMsg.style.display = 'block';
@@ -552,16 +588,17 @@
       canvas.style.display   = 'block';
       emptyMsg.style.display = 'none';
 
-      const incByMonth = {}, expByMonth = {};
+      const incByKey = {}, expByKey = {};
       transactions.forEach(t => {
-        const m = t.date.slice(0, 7);
-        if (t.type === 'income') incByMonth[m] = (incByMonth[m] || 0) + t.amount;
-        else                     expByMonth[m] = (expByMonth[m] || 0) + t.amount;
+        const key = getGroupKey(t.date);
+        if (t.type === 'income') incByKey[key] = (incByKey[key] || 0) + t.amount;
+        else                     expByKey[key] = (expByKey[key] || 0) + t.amount;
       });
 
-      const labels      = months.map(m => new Date(m + '-02').toLocaleDateString('en-US', { month: 'short', year: 'numeric' }));
-      const incomeData  = months.map(m => incByMonth[m] || 0);
-      const expenseData = months.map(m => expByMonth[m] || 0);
+      const keys        = [...new Set([...Object.keys(incByKey), ...Object.keys(expByKey)])].sort();
+      const labels      = keys.map(formatKey);
+      const incomeData  = keys.map(k => incByKey[k]  || 0);
+      const expenseData = keys.map(k => expByKey[k] || 0);
 
       const dark      = window.matchMedia('(prefers-color-scheme: dark)').matches;
       const textColor = dark ? '#b4b2a9' : '#5f5e5a';
@@ -576,18 +613,16 @@
           labels,
           datasets: [
             {
-              label: 'Income', data: incomeData, borderColor: '#1D9E75',
-              backgroundColor: isLine ? '#1D9E7525' : '#1D9E7560',
-              fill: isLine, tension: 0.35,
-              pointRadius: isLine ? 4 : 0, pointHoverRadius: 6,
-              borderWidth: isLine ? 2 : 0, borderRadius: isLine ? 0 : 4,
+              label: 'Income',  data: incomeData,
+              borderColor: '#1D9E75', backgroundColor: isLine ? '#1D9E7525' : '#1D9E7560',
+              fill: isLine, tension: 0.35, pointRadius: 4, pointHoverRadius: 6, borderWidth: 2,
+              ...(isLine ? {} : { borderWidth: 0, borderRadius: 4 }),
             },
             {
-              label: 'Expense', data: expenseData, borderColor: '#E24B4A',
-              backgroundColor: isLine ? '#E24B4A25' : '#E24B4A60',
-              fill: isLine, tension: 0.35,
-              pointRadius: isLine ? 4 : 0, pointHoverRadius: 6,
-              borderWidth: isLine ? 2 : 0, borderRadius: isLine ? 0 : 4,
+              label: 'Expense', data: expenseData,
+              borderColor: '#E24B4A', backgroundColor: isLine ? '#E24B4A25' : '#E24B4A60',
+              fill: isLine, tension: 0.35, pointRadius: 4, pointHoverRadius: 6, borderWidth: 2,
+              ...(isLine ? {} : { borderWidth: 0, borderRadius: 4 }),
             },
           ]
         },
@@ -599,7 +634,7 @@
             tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtK(ctx.parsed.y)}` } }
           },
           scales: {
-            x: { ticks: { color: textColor }, grid: { color: gridColor } },
+            x: { ticks: { color: textColor, maxRotation: 45 }, grid: { color: gridColor } },
             y: { beginAtZero: true, ticks: { color: textColor, callback: fmtK }, grid: { color: gridColor } }
           }
         }
