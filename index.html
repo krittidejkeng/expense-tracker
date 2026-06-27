@@ -184,6 +184,36 @@
     .bar-track { flex: 1; background: var(--surface-1); border-radius: 4px; height: 18px; overflow: hidden; }
     .bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
     .bar-val { font-size: 13px; color: var(--text-secondary); width: 80px; text-align: right; flex-shrink: 0; }
+
+    .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .cal-nav { background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius); width: 30px; height: 30px; cursor: pointer; color: var(--text-primary); font-size: 16px; display: flex; align-items: center; justify-content: center; }
+    .cal-nav:hover { background: var(--surface-1); }
+    .cal-month { font-size: 15px; font-weight: 500; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .cal-dow { font-size: 11px; color: var(--text-muted); text-align: center; padding: 4px 0; }
+    .cal-day {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius);
+      cursor: default;
+      font-size: 13px;
+      position: relative;
+      border: 0.5px solid transparent;
+    }
+    .cal-day.has-expense { cursor: pointer; background: var(--surface-1); }
+    .cal-day.has-expense:hover { border-color: var(--accent); }
+    .cal-day.selected { background: var(--accent); color: #fff; }
+    .cal-day.selected .cal-dot { background: rgba(255,255,255,0.7); }
+    .cal-day.today { font-weight: 500; border-color: var(--border-strong); }
+    .cal-day.other-month { color: var(--text-muted); }
+    .cal-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin-top: 2px; }
+    .cal-day-amt { font-size: 9px; color: var(--text-muted); margin-top: 1px; line-height: 1; }
+    .cal-day.selected .cal-day-amt { color: rgba(255,255,255,0.8); }
+    .cal-clear { font-size: 12px; color: var(--accent); cursor: pointer; background: none; border: none; font-family: inherit; padding: 0; }
+    .cal-clear:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -219,6 +249,18 @@
       <button class="primary" onclick="addExpense()">
         <i class="ti ti-plus" aria-hidden="true"></i> Add expense
       </button>
+    </div>
+
+    <div class="card">
+      <div class="cal-header">
+        <button class="cal-nav" onclick="calPrev()" aria-label="Previous month"><i class="ti ti-chevron-left" aria-hidden="true"></i></button>
+        <span class="cal-month" id="cal-month-label"></span>
+        <button class="cal-nav" onclick="calNext()" aria-label="Next month"><i class="ti ti-chevron-right" aria-hidden="true"></i></button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div style="margin-top:10px; min-height:18px; text-align:right;">
+        <button class="cal-clear" id="cal-clear-btn" onclick="clearCalFilter()" style="display:none">Clear filter</button>
+      </div>
     </div>
 
     <div class="card">
@@ -275,7 +317,83 @@
 
     let expenses = JSON.parse(localStorage.getItem('expenses_v1') || '[]');
 
+    const now0 = new Date();
+    let calYear  = now0.getFullYear();
+    let calMonth = now0.getMonth();
+    let selectedDate = null;
+
     function save() { localStorage.setItem('expenses_v1', JSON.stringify(expenses)); }
+
+    function renderCalendar() {
+      const label = document.getElementById('cal-month-label');
+      label.textContent = new Date(calYear, calMonth, 1)
+        .toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+      const grid = document.getElementById('cal-grid');
+      const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      let html = DAYS.map(d => `<div class="cal-dow">${d}</div>`).join('');
+
+      const firstDay = new Date(calYear, calMonth, 1).getDay();
+      const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+      const daysInPrev  = new Date(calYear, calMonth, 0).getDate();
+      const today = new Date().toISOString().slice(0, 10);
+
+      const dateTotals = {};
+      expenses.forEach(e => { dateTotals[e.date] = (dateTotals[e.date] || 0) + e.amount; });
+
+      for (let i = 0; i < firstDay; i++) {
+        const d = daysInPrev - firstDay + 1 + i;
+        const m = calMonth === 0 ? 12 : calMonth;
+        const y = calMonth === 0 ? calYear - 1 : calYear;
+        html += `<div class="cal-day other-month">${d}</div>`;
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const total   = dateTotals[dateStr];
+        const isToday = dateStr === today;
+        const isSel   = dateStr === selectedDate;
+        let cls = 'cal-day';
+        if (total)   cls += ' has-expense';
+        if (isToday) cls += ' today';
+        if (isSel)   cls += ' selected';
+        const dot = total ? `<span class="cal-dot"></span>` : '';
+        const amt = total ? `<span class="cal-day-amt">฿${Math.round(total).toLocaleString()}</span>` : '';
+        const click = total ? `onclick="selectDate('${dateStr}')"` : '';
+        html += `<div class="${cls}" ${click}>${d}${dot}${amt}</div>`;
+      }
+
+      const cells = firstDay + daysInMonth;
+      const trailing = cells % 7 === 0 ? 0 : 7 - (cells % 7);
+      for (let i = 1; i <= trailing; i++) {
+        html += `<div class="cal-day other-month">${i}</div>`;
+      }
+
+      grid.innerHTML = html;
+      document.getElementById('cal-clear-btn').style.display = selectedDate ? 'inline' : 'none';
+    }
+
+    function calPrev() {
+      if (calMonth === 0) { calMonth = 11; calYear--; } else { calMonth--; }
+      renderCalendar();
+    }
+
+    function calNext() {
+      if (calMonth === 11) { calMonth = 0; calYear++; } else { calMonth++; }
+      renderCalendar();
+    }
+
+    function selectDate(date) {
+      selectedDate = selectedDate === date ? null : date;
+      renderCalendar();
+      renderList();
+    }
+
+    function clearCalFilter() {
+      selectedDate = null;
+      renderCalendar();
+      renderList();
+    }
 
     function fmt(n) {
       return '฿' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
@@ -308,7 +426,8 @@
 
     function renderList() {
       const filter   = document.getElementById('filter-cat').value;
-      const filtered = filter ? expenses.filter(e => e.cat === filter) : expenses;
+      let filtered   = filter ? expenses.filter(e => e.cat === filter) : expenses;
+      if (selectedDate) filtered = filtered.filter(e => e.date === selectedDate);
       const el       = document.getElementById('exp-list');
 
       if (!filtered.length) {
@@ -370,7 +489,7 @@
       `).join('');
     }
 
-    function renderAll() { renderMetrics(); renderList(); renderChart(); }
+    function renderAll() { renderMetrics(); renderCalendar(); renderList(); renderChart(); }
 
     document.getElementById('inp-date').value = new Date().toISOString().slice(0, 10);
     renderAll();
