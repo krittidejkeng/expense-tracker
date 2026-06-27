@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Money Tracker</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -519,32 +520,7 @@
       renderBarChart('chart-group', Object.entries(grpTotals).sort((a,b)=>b[1]-a[1]), name => groupColor(name).bar);
     }
 
-    function renderAll() {
-      renderMetrics();
-      renderGroups();
-      renderFilterCats();
-      renderList();
-      renderCharts();
-    }
-
-    /* ── Boot ── */
-    async function init() {
-      document.getElementById('inp-date').value = new Date().toISOString().slice(0, 10);
-      renderCatOptions();
-      try {
-        [transactions, groups] = await Promise.all([api('/api/expenses'), api('/api/groups')]);
-        renderAll();
-      } catch (e) {
-        const el = document.getElementById('error-banner');
-        el.textContent = 'Cannot connect to server. Run: venv/bin/uvicorn main:app --reload';
-        el.style.display = 'block';
-      }
-    }
-
-    init();
-  </script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <script>
+    /* ── Timeline chart ── */
     let timelineChart = null;
     let chartType     = 'line';
 
@@ -590,51 +566,70 @@
       const dark      = window.matchMedia('(prefers-color-scheme: dark)').matches;
       const textColor = dark ? '#b4b2a9' : '#5f5e5a';
       const gridColor = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+      const isLine    = chartType === 'line';
 
-      const isLine = chartType === 'line';
-      const incDataset = {
-        label: 'Income', data: incomeData, borderColor: '#1D9E75',
-        ...(isLine
-          ? { type: 'line', backgroundColor: '#1D9E7520', fill: true, tension: 0.35, pointRadius: 4, pointHoverRadius: 6, borderWidth: 2 }
-          : { type: 'bar',  backgroundColor: '#1D9E7550', borderWidth: 1.5, borderRadius: 4 })
-      };
-      const expDataset = {
-        label: 'Expense', data: expenseData, borderColor: '#E24B4A',
-        ...(isLine
-          ? { type: 'line', backgroundColor: '#E24B4A20', fill: true, tension: 0.35, pointRadius: 4, pointHoverRadius: 6, borderWidth: 2 }
-          : { type: 'bar',  backgroundColor: '#E24B4A50', borderWidth: 1.5, borderRadius: 4 })
-      };
-
-      if (timelineChart) { timelineChart.destroy(); }
+      if (timelineChart) { timelineChart.destroy(); timelineChart = null; }
 
       timelineChart = new Chart(canvas, {
         type: isLine ? 'line' : 'bar',
-        data: { labels, datasets: [incDataset, expDataset] },
+        data: {
+          labels,
+          datasets: [
+            {
+              label: 'Income', data: incomeData, borderColor: '#1D9E75',
+              backgroundColor: isLine ? '#1D9E7525' : '#1D9E7560',
+              fill: isLine, tension: 0.35,
+              pointRadius: isLine ? 4 : 0, pointHoverRadius: 6,
+              borderWidth: isLine ? 2 : 0, borderRadius: isLine ? 0 : 4,
+            },
+            {
+              label: 'Expense', data: expenseData, borderColor: '#E24B4A',
+              backgroundColor: isLine ? '#E24B4A25' : '#E24B4A60',
+              fill: isLine, tension: 0.35,
+              pointRadius: isLine ? 4 : 0, pointHoverRadius: 6,
+              borderWidth: isLine ? 2 : 0, borderRadius: isLine ? 0 : 4,
+            },
+          ]
+        },
         options: {
           responsive: true,
           interaction: { mode: 'index', intersect: false },
           plugins: {
             legend: { labels: { color: textColor, boxWidth: 12, padding: 16 } },
-            tooltip: {
-              callbacks: {
-                label: ctx => ` ${ctx.dataset.label}: ${fmtK(ctx.parsed.y)}`
-              }
-            }
+            tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtK(ctx.parsed.y)}` } }
           },
           scales: {
             x: { ticks: { color: textColor }, grid: { color: gridColor } },
-            y: {
-              beginAtZero: true,
-              ticks: { color: textColor, callback: fmtK },
-              grid: { color: gridColor }
-            }
+            y: { beginAtZero: true, ticks: { color: textColor, callback: fmtK }, grid: { color: gridColor } }
           }
         }
       });
     }
 
-    const _origRenderAll = renderAll;
-    renderAll = function() { _origRenderAll(); renderTimelineChart(); };
+    function renderAll() {
+      renderMetrics();
+      renderGroups();
+      renderFilterCats();
+      renderList();
+      renderCharts();
+      renderTimelineChart();
+    }
+
+    /* ── Boot ── */
+    async function init() {
+      document.getElementById('inp-date').value = new Date().toISOString().slice(0, 10);
+      renderCatOptions();
+      try {
+        [transactions, groups] = await Promise.all([api('/api/expenses'), api('/api/groups')]);
+        renderAll();
+      } catch (e) {
+        const el = document.getElementById('error-banner');
+        el.textContent = 'Cannot connect to server. Run: venv/bin/uvicorn main:app --reload';
+        el.style.display = 'block';
+      }
+    }
+
+    init();
   </script>
 </body>
 </html>
