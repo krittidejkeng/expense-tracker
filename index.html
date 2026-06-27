@@ -46,12 +46,7 @@
 
     .container { max-width: 720px; margin: 0 auto; }
 
-    h1 {
-      font-size: 22px;
-      font-weight: 500;
-      margin-bottom: 1.5rem;
-      color: var(--text-primary);
-    }
+    h1 { font-size: 22px; font-weight: 500; margin-bottom: 1.5rem; color: var(--text-primary); }
 
     .metrics {
       display: grid;
@@ -60,12 +55,7 @@
       margin-bottom: 1.5rem;
     }
 
-    .metric {
-      background: var(--surface-1);
-      border-radius: var(--radius);
-      padding: 0.85rem 1rem;
-    }
-
+    .metric { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem; }
     .metric-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
     .metric-value { font-size: 22px; font-weight: 500; }
 
@@ -77,22 +67,10 @@
       margin-bottom: 1.5rem;
     }
 
-    .card-title {
-      font-size: 15px;
-      font-weight: 500;
-      margin-bottom: 14px;
-    }
+    .card-title { font-size: 15px; font-weight: 500; margin-bottom: 14px; }
 
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
     @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
-
-    .form-full { margin-bottom: 10px; }
 
     input, select {
       width: 100%;
@@ -124,99 +102,87 @@
       align-items: center;
       gap: 6px;
     }
-
     button.primary:hover { background: var(--accent-hover); }
 
-    .list-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
+    .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+    .filter-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .filter-sel { width: auto; height: 30px; font-size: 13px; }
 
-    .exp-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 0;
-      border-bottom: 0.5px solid var(--border);
-    }
-
+    .exp-item { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 0.5px solid var(--border); flex-wrap: wrap; }
     .exp-item:last-child { border-bottom: none; }
+    .exp-badges { display: flex; gap: 5px; flex-shrink: 0; }
 
     .cat-badge {
-      font-size: 11px;
-      font-weight: 500;
-      padding: 3px 8px;
-      border-radius: 20px;
+      font-size: 11px; font-weight: 500;
+      padding: 3px 8px; border-radius: 20px;
       white-space: nowrap;
-      flex-shrink: 0;
+    }
+    .group-badge {
+      font-size: 11px; font-weight: 500;
+      padding: 3px 8px; border-radius: 20px;
+      white-space: nowrap;
+      background: var(--surface-1);
+      color: var(--text-secondary);
+      border: 0.5px solid var(--border-strong);
     }
 
-    .exp-desc { flex: 1; font-size: 14px; }
+    .exp-desc { flex: 1; font-size: 14px; min-width: 100px; }
     .exp-date { font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
     .exp-amount { font-size: 15px; font-weight: 500; flex-shrink: 0; }
-
-    .del-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--text-muted);
-      font-size: 16px;
-      line-height: 1;
-      padding: 0 4px;
-      flex-shrink: 0;
-    }
-
+    .del-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px; line-height: 1; padding: 0 4px; flex-shrink: 0; }
     .del-btn:hover { color: #e24b4a; }
 
-    .empty-msg {
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 14px;
-      padding: 1.5rem 0;
-    }
+    .empty-msg { text-align: center; color: var(--text-muted); font-size: 14px; padding: 1.5rem 0; }
 
     .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .bar-label { font-size: 13px; color: var(--text-secondary); width: 110px; flex-shrink: 0; text-align: right; }
+    .bar-label { font-size: 13px; color: var(--text-secondary); width: 110px; flex-shrink: 0; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .bar-track { flex: 1; background: var(--surface-1); border-radius: 4px; height: 18px; overflow: hidden; }
     .bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
     .bar-val { font-size: 13px; color: var(--text-secondary); width: 80px; text-align: right; flex-shrink: 0; }
 
+    /* Calendar */
     .cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
     .cal-nav { background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius); width: 30px; height: 30px; cursor: pointer; color: var(--text-primary); font-size: 16px; display: flex; align-items: center; justify-content: center; }
     .cal-nav:hover { background: var(--surface-1); }
     .cal-month { font-size: 15px; font-weight: 500; }
     .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
     .cal-dow { font-size: 11px; color: var(--text-muted); text-align: center; padding: 4px 0; }
-    .cal-day {
-      aspect-ratio: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      border-radius: var(--radius);
-      cursor: default;
-      font-size: 13px;
-      position: relative;
-      border: 0.5px solid transparent;
-    }
+    .cal-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: var(--radius); cursor: default; font-size: 13px; border: 0.5px solid transparent; }
     .cal-day.has-expense { cursor: pointer; background: var(--surface-1); }
     .cal-day.has-expense:hover { border-color: var(--accent); }
     .cal-day.selected { background: var(--accent); color: #fff; }
     .cal-day.selected .cal-dot { background: rgba(255,255,255,0.7); }
+    .cal-day.selected .cal-day-amt { color: rgba(255,255,255,0.8); }
     .cal-day.today { font-weight: 500; border-color: var(--border-strong); }
     .cal-day.other-month { color: var(--text-muted); }
     .cal-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); margin-top: 2px; }
     .cal-day-amt { font-size: 9px; color: var(--text-muted); margin-top: 1px; line-height: 1; }
-    .cal-day.selected .cal-day-amt { color: rgba(255,255,255,0.8); }
     .cal-clear { font-size: 12px; color: var(--accent); cursor: pointer; background: none; border: none; font-family: inherit; padding: 0; }
     .cal-clear:hover { text-decoration: underline; }
+
+    /* Groups */
+    .groups-add-row { display: flex; gap: 8px; margin-bottom: 14px; }
+    .groups-add-row input { flex: 1; }
+    .groups-add-row button { background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius); padding: 0 14px; height: 36px; font-size: 14px; font-family: inherit; cursor: pointer; color: var(--text-primary); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
+    .groups-add-row button:hover { background: var(--surface-1); }
+    .groups-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .group-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 10px 5px 12px;
+      border-radius: 20px;
+      font-size: 13px; font-weight: 500;
+      border: 0.5px solid transparent;
+      cursor: default;
+    }
+    .group-pill .pill-del { background: none; border: none; cursor: pointer; opacity: 0.5; font-size: 14px; line-height: 1; padding: 0; color: inherit; display: flex; align-items: center; }
+    .group-pill .pill-del:hover { opacity: 1; }
+    .group-pill.active { outline: 2px solid currentColor; outline-offset: 1px; }
+    .no-groups { font-size: 13px; color: var(--text-muted); }
   </style>
 </head>
 <body>
+  <div id="error-banner" style="display:none;background:#FCEBEB;color:#791F1F;border:0.5px solid #F09595;border-radius:var(--radius);padding:10px 14px;margin-bottom:1rem;font-size:14px;"></div>
+
   <div class="container">
     <h1><i class="ti ti-wallet" aria-hidden="true"></i> Expense Tracker</h1>
 
@@ -227,6 +193,20 @@
       <div class="metric"><p class="metric-label">Top category</p><p class="metric-value" id="m-top" style="font-size:15px">—</p></div>
     </div>
 
+    <!-- Groups management -->
+    <div class="card">
+      <p class="card-title"><i class="ti ti-tag" aria-hidden="true"></i> Groups</p>
+      <div class="groups-add-row">
+        <input type="text" id="inp-group-name" placeholder="New group name (e.g. Travel)" maxlength="40"
+               onkeydown="if(event.key==='Enter') addGroup()">
+        <button onclick="addGroup()"><i class="ti ti-plus" aria-hidden="true"></i> Add group</button>
+      </div>
+      <div class="groups-pills" id="groups-pills">
+        <span class="no-groups">No groups yet.</span>
+      </div>
+    </div>
+
+    <!-- Add expense -->
     <div class="card">
       <p class="card-title">Add expense</p>
       <div class="form-row">
@@ -244,6 +224,11 @@
           <option>Entertainment</option>
           <option>Other</option>
         </select>
+        <select id="inp-group">
+          <option value="">No group (optional)</option>
+        </select>
+      </div>
+      <div class="form-row">
         <input type="date" id="inp-date">
       </div>
       <button class="primary" onclick="addExpense()">
@@ -251,6 +236,7 @@
       </button>
     </div>
 
+    <!-- Calendar -->
     <div class="card">
       <div class="cal-header">
         <button class="cal-nav" onclick="calPrev()" aria-label="Previous month"><i class="ti ti-chevron-left" aria-hidden="true"></i></button>
@@ -259,204 +245,239 @@
       </div>
       <div class="cal-grid" id="cal-grid"></div>
       <div style="margin-top:10px; min-height:18px; text-align:right;">
-        <button class="cal-clear" id="cal-clear-btn" onclick="clearCalFilter()" style="display:none">Clear filter</button>
+        <button class="cal-clear" id="cal-clear-btn" onclick="clearCalFilter()" style="display:none">Clear date filter</button>
       </div>
     </div>
 
+    <!-- Expense list -->
     <div class="card">
       <div class="list-header">
         <p class="card-title" style="margin:0">Expenses</p>
-        <select class="filter-sel" id="filter-cat" onchange="renderList()">
-          <option value="">All categories</option>
-          <option>Food &amp; drinks</option>
-          <option>Transport</option>
-          <option>Shopping</option>
-          <option>Bills &amp; utilities</option>
-          <option>Health</option>
-          <option>Entertainment</option>
-          <option>Other</option>
-        </select>
+        <div class="filter-row">
+          <select class="filter-sel" id="filter-group" onchange="renderList()">
+            <option value="">All groups</option>
+          </select>
+          <select class="filter-sel" id="filter-cat" onchange="renderList()">
+            <option value="">All categories</option>
+            <option>Food &amp; drinks</option>
+            <option>Transport</option>
+            <option>Shopping</option>
+            <option>Bills &amp; utilities</option>
+            <option>Health</option>
+            <option>Entertainment</option>
+            <option>Other</option>
+          </select>
+        </div>
       </div>
       <div id="exp-list"></div>
     </div>
 
+    <!-- Charts -->
     <div class="card">
       <p class="card-title">Spending by category</p>
-      <div id="chart"></div>
+      <div id="chart-cat"></div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Spending by group</p>
+      <div id="chart-group"></div>
     </div>
   </div>
 
   <script>
     const CAT_COLORS = {
-      'Food & drinks':     '#1D9E75',
-      'Transport':         '#378ADD',
-      'Shopping':          '#D4537E',
-      'Bills & utilities': '#BA7517',
-      'Health':            '#534AB7',
-      'Entertainment':     '#D85A30',
-      'Other':             '#888780'
+      'Food & drinks': '#1D9E75', 'Transport': '#378ADD', 'Shopping': '#D4537E',
+      'Bills & utilities': '#BA7517', 'Health': '#534AB7', 'Entertainment': '#D85A30', 'Other': '#888780'
     };
     const CAT_BG = {
-      'Food & drinks':     '#E1F5EE',
-      'Transport':         '#E6F1FB',
-      'Shopping':          '#FBEAF0',
-      'Bills & utilities': '#FAEEDA',
-      'Health':            '#EEEDFE',
-      'Entertainment':     '#FAECE7',
-      'Other':             '#F1EFE8'
+      'Food & drinks': '#E1F5EE', 'Transport': '#E6F1FB', 'Shopping': '#FBEAF0',
+      'Bills & utilities': '#FAEEDA', 'Health': '#EEEDFE', 'Entertainment': '#FAECE7', 'Other': '#F1EFE8'
     };
     const CAT_TEXT = {
-      'Food & drinks':     '#085041',
-      'Transport':         '#0C447C',
-      'Shopping':          '#72243E',
-      'Bills & utilities': '#633806',
-      'Health':            '#3C3489',
-      'Entertainment':     '#712B13',
-      'Other':             '#444441'
+      'Food & drinks': '#085041', 'Transport': '#0C447C', 'Shopping': '#72243E',
+      'Bills & utilities': '#633806', 'Health': '#3C3489', 'Entertainment': '#712B13', 'Other': '#444441'
     };
+    const GROUP_PALETTE = [
+      { bg: '#E6F1FB', text: '#0C447C', bar: '#378ADD' },
+      { bg: '#EEEDFE', text: '#3C3489', bar: '#534AB7' },
+      { bg: '#E1F5EE', text: '#085041', bar: '#1D9E75' },
+      { bg: '#FAEEDA', text: '#633806', bar: '#BA7517' },
+      { bg: '#FBEAF0', text: '#72243E', bar: '#D4537E' },
+      { bg: '#FAECE7', text: '#712B13', bar: '#D85A30' },
+      { bg: '#EAF3DE', text: '#27500A', bar: '#639922' },
+      { bg: '#FCEBEB', text: '#791F1F', bar: '#E24B4A' },
+    ];
 
-    let expenses = JSON.parse(localStorage.getItem('expenses_v1') || '[]');
+    let expenses = [];
+    let groups   = [];
 
     const now0 = new Date();
-    let calYear  = now0.getFullYear();
-    let calMonth = now0.getMonth();
+    let calYear      = now0.getFullYear();
+    let calMonth     = now0.getMonth();
     let selectedDate = null;
 
-    function save() { localStorage.setItem('expenses_v1', JSON.stringify(expenses)); }
-
-    function renderCalendar() {
-      const label = document.getElementById('cal-month-label');
-      label.textContent = new Date(calYear, calMonth, 1)
-        .toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-      const grid = document.getElementById('cal-grid');
-      const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-      let html = DAYS.map(d => `<div class="cal-dow">${d}</div>`).join('');
-
-      const firstDay = new Date(calYear, calMonth, 1).getDay();
-      const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-      const daysInPrev  = new Date(calYear, calMonth, 0).getDate();
-      const today = new Date().toISOString().slice(0, 10);
-
-      const dateTotals = {};
-      expenses.forEach(e => { dateTotals[e.date] = (dateTotals[e.date] || 0) + e.amount; });
-
-      for (let i = 0; i < firstDay; i++) {
-        const d = daysInPrev - firstDay + 1 + i;
-        const m = calMonth === 0 ? 12 : calMonth;
-        const y = calMonth === 0 ? calYear - 1 : calYear;
-        html += `<div class="cal-day other-month">${d}</div>`;
-      }
-
-      for (let d = 1; d <= daysInMonth; d++) {
-        const dateStr = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-        const total   = dateTotals[dateStr];
-        const isToday = dateStr === today;
-        const isSel   = dateStr === selectedDate;
-        let cls = 'cal-day';
-        if (total)   cls += ' has-expense';
-        if (isToday) cls += ' today';
-        if (isSel)   cls += ' selected';
-        const dot = total ? `<span class="cal-dot"></span>` : '';
-        const amt = total ? `<span class="cal-day-amt">฿${Math.round(total).toLocaleString()}</span>` : '';
-        const click = total ? `onclick="selectDate('${dateStr}')"` : '';
-        html += `<div class="${cls}" ${click}>${d}${dot}${amt}</div>`;
-      }
-
-      const cells = firstDay + daysInMonth;
-      const trailing = cells % 7 === 0 ? 0 : 7 - (cells % 7);
-      for (let i = 1; i <= trailing; i++) {
-        html += `<div class="cal-day other-month">${i}</div>`;
-      }
-
-      grid.innerHTML = html;
-      document.getElementById('cal-clear-btn').style.display = selectedDate ? 'inline' : 'none';
-    }
-
-    function calPrev() {
-      if (calMonth === 0) { calMonth = 11; calYear--; } else { calMonth--; }
-      renderCalendar();
-    }
-
-    function calNext() {
-      if (calMonth === 11) { calMonth = 0; calYear++; } else { calMonth++; }
-      renderCalendar();
-    }
-
-    function selectDate(date) {
-      selectedDate = selectedDate === date ? null : date;
-      renderCalendar();
-      renderList();
-    }
-
-    function clearCalFilter() {
-      selectedDate = null;
-      renderCalendar();
-      renderList();
+    function groupColor(name) {
+      const idx = groups.indexOf(name);
+      return GROUP_PALETTE[idx % GROUP_PALETTE.length] || GROUP_PALETTE[0];
     }
 
     function fmt(n) {
       return '฿' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
     }
 
-    function addExpense() {
+    function showError(msg) {
+      const el = document.getElementById('error-banner');
+      el.textContent = msg;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 4000);
+    }
+
+    async function api(path, method = 'GET', body = null) {
+      const opts = { method, headers: { 'Content-Type': 'application/json' } };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(path, opts);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${res.status}`);
+      }
+      return res.json();
+    }
+
+    /* ── Groups ── */
+    async function addGroup() {
+      const name = document.getElementById('inp-group-name').value.trim();
+      if (!name) return;
+      try {
+        await api('/api/groups', 'POST', { name });
+        groups.push(name);
+        document.getElementById('inp-group-name').value = '';
+        renderGroups();
+      } catch (e) {
+        showError(e.message === 'Group already exists' ? 'Group already exists.' : 'Could not add group.');
+      }
+    }
+
+    async function deleteGroup(name) {
+      const hasExpenses = expenses.some(e => e.group === name);
+      if (hasExpenses && !confirm(`Delete group "${name}"? Expenses tagged with it will become untagged.`)) return;
+      try {
+        await api(`/api/groups/${encodeURIComponent(name)}`, 'DELETE');
+        groups = groups.filter(g => g !== name);
+        expenses = expenses.map(e => e.group === name ? { ...e, group: '' } : e);
+        renderGroups();
+        renderAll();
+      } catch (e) {
+        showError('Could not delete group.');
+      }
+    }
+
+    function renderGroups() {
+      const el = document.getElementById('groups-pills');
+      if (!groups.length) {
+        el.innerHTML = '<span class="no-groups">No groups yet. Add one above.</span>';
+      } else {
+        el.innerHTML = groups.map(g => {
+          const c = groupColor(g);
+          return `<span class="group-pill" style="background:${c.bg};color:${c.text};border-color:${c.bg}">
+            ${g}
+            <button class="pill-del" onclick="deleteGroup('${g.replace(/'/g, "\\'")}') " aria-label="Delete group ${g}">
+              <i class="ti ti-x" aria-hidden="true"></i>
+            </button>
+          </span>`;
+        }).join('');
+      }
+
+      const groupSel  = document.getElementById('inp-group');
+      const filterSel = document.getElementById('filter-group');
+      const prevGroup  = groupSel.value;
+      const prevFilter = filterSel.value;
+
+      groupSel.innerHTML  = '<option value="">No group (optional)</option>' +
+        groups.map(g => `<option value="${g}">${g}</option>`).join('');
+      filterSel.innerHTML = '<option value="">All groups</option>' +
+        groups.map(g => `<option value="${g}">${g}</option>`).join('');
+
+      if (groups.includes(prevGroup))  groupSel.value  = prevGroup;
+      if (groups.includes(prevFilter)) filterSel.value = prevFilter;
+    }
+
+    /* ── Expense CRUD ── */
+    async function addExpense() {
       const desc   = document.getElementById('inp-desc').value.trim();
       const amount = parseFloat(document.getElementById('inp-amount').value);
       const cat    = document.getElementById('inp-cat').value;
+      const group  = document.getElementById('inp-group').value;
       const date   = document.getElementById('inp-date').value;
 
       if (!desc || !amount || amount <= 0 || !cat || !date) {
-        alert('Please fill in all fields.');
+        alert('Please fill in description, amount, category, and date.');
         return;
       }
-
-      expenses.unshift({ id: Date.now(), desc, amount, cat, date });
-      save();
-      document.getElementById('inp-desc').value   = '';
-      document.getElementById('inp-amount').value = '';
-      document.getElementById('inp-cat').value    = '';
-      renderAll();
+      try {
+        const row = await api('/api/expenses', 'POST', { desc, amount, cat, group, date });
+        expenses.unshift(row);
+        document.getElementById('inp-desc').value   = '';
+        document.getElementById('inp-amount').value = '';
+        document.getElementById('inp-cat').value    = '';
+        document.getElementById('inp-group').value  = '';
+        renderAll();
+      } catch (e) {
+        showError('Could not save expense. Is the server running?');
+      }
     }
 
-    function deleteExpense(id) {
-      expenses = expenses.filter(e => e.id !== id);
-      save();
-      renderAll();
+    async function deleteExpense(id) {
+      try {
+        await api(`/api/expenses/${id}`, 'DELETE');
+        expenses = expenses.filter(e => e.id !== id);
+        renderAll();
+      } catch (e) {
+        showError('Could not delete expense.');
+      }
     }
 
+    /* ── Render ── */
     function renderList() {
-      const filter   = document.getElementById('filter-cat').value;
-      let filtered   = filter ? expenses.filter(e => e.cat === filter) : expenses;
+      const filterCat   = document.getElementById('filter-cat').value;
+      const filterGroup = document.getElementById('filter-group').value;
+      let filtered = expenses;
+      if (filterCat)    filtered = filtered.filter(e => e.cat === filterCat);
+      if (filterGroup)  filtered = filtered.filter(e => e.group === filterGroup);
       if (selectedDate) filtered = filtered.filter(e => e.date === selectedDate);
-      const el       = document.getElementById('exp-list');
 
+      const el = document.getElementById('exp-list');
       if (!filtered.length) {
-        el.innerHTML = '<p class="empty-msg">No expenses yet. Add one above.</p>';
+        el.innerHTML = '<p class="empty-msg">No expenses match the current filters.</p>';
         return;
       }
 
-      el.innerHTML = filtered.map(e => `
+      el.innerHTML = filtered.map(e => {
+        const gc = e.group ? groupColor(e.group) : null;
+        const groupBadge = e.group
+          ? `<span class="cat-badge" style="background:${gc.bg};color:${gc.text}">${e.group}</span>`
+          : '';
+        return `
         <div class="exp-item">
-          <span class="cat-badge" style="background:${CAT_BG[e.cat]||'#F1EFE8'};color:${CAT_TEXT[e.cat]||'#444441'}">${e.cat}</span>
+          <div class="exp-badges">
+            <span class="cat-badge" style="background:${CAT_BG[e.cat]||'#F1EFE8'};color:${CAT_TEXT[e.cat]||'#444441'}">${e.cat}</span>
+            ${groupBadge}
+          </div>
           <span class="exp-desc">${e.desc}</span>
           <span class="exp-date">${e.date}</span>
           <span class="exp-amount">${fmt(e.amount)}</span>
-          <button class="del-btn" onclick="deleteExpense(${e.id})" aria-label="Delete expense">
+          <button class="del-btn" onclick="deleteExpense('${e.id}')" aria-label="Delete expense">
             <i class="ti ti-trash" aria-hidden="true"></i>
           </button>
-        </div>
-      `).join('');
+        </div>`;
+      }).join('');
     }
 
     function renderMetrics() {
       const total = expenses.reduce((s, e) => s + e.amount, 0);
       const now   = new Date();
       const ym    = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      const monthTotal = expenses
-        .filter(e => e.date.startsWith(ym))
-        .reduce((s, e) => s + e.amount, 0);
-
-      const catTotals = {};
+      const monthTotal = expenses.filter(e => e.date.startsWith(ym)).reduce((s, e) => s + e.amount, 0);
+      const catTotals  = {};
       expenses.forEach(e => { catTotals[e.cat] = (catTotals[e.cat] || 0) + e.amount; });
       const topCat = Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0];
 
@@ -466,33 +487,99 @@
       document.getElementById('m-top').textContent   = topCat ? topCat[0] : '—';
     }
 
-    function renderChart() {
-      const catTotals = {};
-      expenses.forEach(e => { catTotals[e.cat] = (catTotals[e.cat] || 0) + e.amount; });
-      const sorted = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
-      const max    = sorted[0] ? sorted[0][1] : 1;
-      const el     = document.getElementById('chart');
-
-      if (!sorted.length) {
-        el.innerHTML = '<p class="empty-msg">No data yet.</p>';
-        return;
-      }
-
-      el.innerHTML = sorted.map(([cat, val]) => `
+    function renderBarChart(elId, entries, colorFn) {
+      const el  = document.getElementById(elId);
+      const max = entries[0] ? entries[0][1] : 1;
+      if (!entries.length) { el.innerHTML = '<p class="empty-msg">No data yet.</p>'; return; }
+      el.innerHTML = entries.map(([label, val]) => `
         <div class="bar-row">
-          <span class="bar-label">${cat}</span>
+          <span class="bar-label" title="${label}">${label}</span>
           <div class="bar-track">
-            <div class="bar-fill" style="width:${Math.round(val / max * 100)}%;background:${CAT_COLORS[cat] || '#888780'}"></div>
+            <div class="bar-fill" style="width:${Math.round(val / max * 100)}%;background:${colorFn(label)}"></div>
           </div>
           <span class="bar-val">${fmt(val)}</span>
-        </div>
-      `).join('');
+        </div>`).join('');
     }
 
-    function renderAll() { renderMetrics(); renderCalendar(); renderList(); renderChart(); }
+    function renderCharts() {
+      const catTotals = {}, groupTotals = {};
+      expenses.forEach(e => {
+        catTotals[e.cat] = (catTotals[e.cat] || 0) + e.amount;
+        if (e.group) groupTotals[e.group] = (groupTotals[e.group] || 0) + e.amount;
+      });
+      renderBarChart('chart-cat',   Object.entries(catTotals).sort((a, b) => b[1] - a[1]),   cat  => CAT_COLORS[cat] || '#888780');
+      renderBarChart('chart-group', Object.entries(groupTotals).sort((a, b) => b[1] - a[1]), name => groupColor(name).bar);
+    }
 
-    document.getElementById('inp-date').value = new Date().toISOString().slice(0, 10);
-    renderAll();
+    /* ── Calendar ── */
+    function renderCalendar() {
+      document.getElementById('cal-month-label').textContent =
+        new Date(calYear, calMonth, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+      const grid        = document.getElementById('cal-grid');
+      const DAYS        = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      let html          = DAYS.map(d => `<div class="cal-dow">${d}</div>`).join('');
+      const firstDay    = new Date(calYear, calMonth, 1).getDay();
+      const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+      const daysInPrev  = new Date(calYear, calMonth, 0).getDate();
+      const today       = new Date().toISOString().slice(0, 10);
+      const dateTotals  = {};
+      expenses.forEach(e => { dateTotals[e.date] = (dateTotals[e.date] || 0) + e.amount; });
+
+      for (let i = 0; i < firstDay; i++)
+        html += `<div class="cal-day other-month">${daysInPrev - firstDay + 1 + i}</div>`;
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const ds    = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const total = dateTotals[ds];
+        let cls = 'cal-day';
+        if (total)            cls += ' has-expense';
+        if (ds === today)     cls += ' today';
+        if (ds === selectedDate) cls += ' selected';
+        const dot   = total ? `<span class="cal-dot"></span>` : '';
+        const amt   = total ? `<span class="cal-day-amt">฿${Math.round(total).toLocaleString()}</span>` : '';
+        const click = total ? `onclick="selectDate('${ds}')"` : '';
+        html += `<div class="${cls}" ${click}>${d}${dot}${amt}</div>`;
+      }
+
+      const trailing = (firstDay + daysInMonth) % 7;
+      for (let i = 1; i <= (trailing ? 7 - trailing : 0); i++)
+        html += `<div class="cal-day other-month">${i}</div>`;
+
+      grid.innerHTML = html;
+      document.getElementById('cal-clear-btn').style.display = selectedDate ? 'inline' : 'none';
+    }
+
+    function calPrev() { if (calMonth === 0) { calMonth = 11; calYear--; } else calMonth--; renderCalendar(); }
+    function calNext() { if (calMonth === 11) { calMonth = 0; calYear++; } else calMonth++; renderCalendar(); }
+
+    function selectDate(date) {
+      selectedDate = selectedDate === date ? null : date;
+      renderCalendar();
+      renderList();
+    }
+
+    function clearCalFilter() { selectedDate = null; renderCalendar(); renderList(); }
+
+    function renderAll() { renderMetrics(); renderGroups(); renderCalendar(); renderList(); renderCharts(); }
+
+    /* ── Boot ── */
+    async function init() {
+      document.getElementById('inp-date').value = new Date().toISOString().slice(0, 10);
+      try {
+        [expenses, groups] = await Promise.all([
+          api('/api/expenses'),
+          api('/api/groups'),
+        ]);
+        renderAll();
+      } catch (e) {
+        document.getElementById('error-banner').textContent =
+          'Cannot connect to server. Run: uvicorn main:app --reload';
+        document.getElementById('error-banner').style.display = 'block';
+      }
+    }
+
+    init();
   </script>
 </body>
 </html>
