@@ -148,6 +148,27 @@
     .group-pill .pill-del { background: none; border: none; cursor: pointer; opacity: 0.5; font-size: 14px; line-height: 1; padding: 0; color: inherit; display: flex; align-items: center; }
     .group-pill .pill-del:hover { opacity: 1; }
     .no-groups { font-size: 13px; color: var(--text-muted); }
+
+    /* Budgets */
+    .budget-form-section { margin-bottom: 16px; }
+    .budget-cards { display: flex; flex-direction: column; gap: 10px; }
+    .budget-card { border: 0.5px solid var(--border-strong); border-radius: var(--radius); padding: 14px 16px; }
+    .budget-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 3px; }
+    .budget-card-name { font-size: 14px; font-weight: 600; }
+    .budget-card-meta { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+    .budget-amounts { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+    .budget-amounts strong { font-weight: 600; }
+    .budget-progress-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .budget-progress-track { flex: 1; height: 6px; background: var(--surface-0); border-radius: 3px; overflow: hidden; }
+    .budget-progress-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+    .budget-progress-pct { font-size: 12px; color: var(--text-muted); width: 34px; text-align: right; flex-shrink: 0; }
+    .budget-status { font-size: 13px; font-weight: 500; }
+    .budget-status.on-track    { color: var(--green); }
+    .budget-status.over-pace   { color: #BA7517; }
+    .budget-status.over-budget { color: var(--red); }
+    .budget-status.not-started { color: var(--text-secondary); }
+    .budget-status.finished    { color: var(--text-secondary); }
+    .budget-status.finished-ok { color: var(--green); }
   </style>
 </head>
 <body>
@@ -224,6 +245,38 @@
       <div id="exp-list"></div>
     </div>
 
+    <!-- Budgets -->
+    <div class="card">
+      <p class="card-title"><i class="ti ti-wallet" aria-hidden="true"></i> Budgets</p>
+      <div class="budget-form-section">
+        <div class="form-row">
+          <input type="text" id="inp-budget-name" placeholder="Budget name (e.g. July Food)" maxlength="50"
+                 onkeydown="if(event.key==='Enter') addBudget()">
+          <input type="number" id="inp-budget-amount" placeholder="Total budget (฿)" min="1" step="1">
+        </div>
+        <div class="form-row">
+          <select id="inp-budget-cat"></select>
+          <select id="inp-budget-group">
+            <option value="">All groups</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div>
+            <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Start date</label>
+            <input type="date" id="inp-budget-start">
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">End date</label>
+            <input type="date" id="inp-budget-end">
+          </div>
+        </div>
+        <button class="submit-btn income" onclick="addBudget()">
+          <i class="ti ti-plus" aria-hidden="true"></i> Set budget
+        </button>
+      </div>
+      <div class="budget-cards" id="budget-cards"></div>
+    </div>
+
     <!-- Timeline chart -->
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
@@ -295,6 +348,7 @@
 
     let transactions = [];
     let groups       = [];
+    let budgets      = [];
     let currentType  = 'expense';
 
     function groupColor(name) {
@@ -401,6 +455,7 @@
       gf.innerHTML = '<option value="">All groups</option>' + opts;
       if (groups.includes(pv)) gs.value = pv;
       if (groups.includes(pf)) gf.value = pf;
+      renderBudgetGroupOptions();
     }
 
     /* ── Transaction CRUD ── */
@@ -637,21 +692,208 @@
       });
     }
 
+    /* ── Budgets ── */
+    function renderBudgetCatOptions() {
+      document.getElementById('inp-budget-cat').innerHTML =
+        '<option value="all">All expenses</option>' +
+        EXPENSE_CATS.map(c => `<option>${c}</option>`).join('');
+    }
+
+    function renderBudgetGroupOptions() {
+      const sel = document.getElementById('inp-budget-group');
+      if (!sel) return;
+      const pv = sel.value;
+      sel.innerHTML = '<option value="">All groups</option>' + groups.map(g => `<option>${g}</option>`).join('');
+      if (groups.includes(pv)) sel.value = pv;
+    }
+
+    function calcBudget(b) {
+      const MS       = 86400000;
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const start    = new Date(b.start_date + 'T00:00:00');
+      const end      = new Date(b.end_date   + 'T00:00:00');
+      const today    = new Date(todayStr      + 'T00:00:00');
+
+      const totalDays = Math.round((end - start) / MS) + 1;
+      const dailyRate = b.amount / totalDays;
+
+      const notStarted = today < start;
+      const isFinished = today > end;
+      const isActive   = !notStarted && !isFinished;
+
+      // Days fully completed before today (capped by period)
+      const daysCompleted = notStarted ? 0
+        : isFinished ? totalDays
+        : Math.round((today - start) / MS);
+      const daysElapsed = daysCompleted + (isActive ? 1 : 0);
+
+      const match = transactions.filter(t => {
+        if (t.type !== 'expense') return false;
+        if (t.date < b.start_date || t.date > b.end_date) return false;
+        if (b.cat   && b.cat   !== 'all' && t.cat   !== b.cat)   return false;
+        if (b.group && b.group !== ''    && t.group  !== b.group) return false;
+        return true;
+      });
+
+      const actualSpent      = match.reduce((s, t) => s + t.amount, 0);
+      const spentBeforeToday = match.filter(t => t.date < todayStr).reduce((s, t) => s + t.amount, 0);
+      const spentToday       = match.filter(t => t.date === todayStr).reduce((s, t) => s + t.amount, 0);
+
+      // Carry-over: how much over/under plan from completed days
+      const expectedBeforeToday = daysCompleted * dailyRate;
+      const carryOver           = spentBeforeToday - expectedBeforeToday; // positive = over plan
+      const todayBudget         = dailyRate - carryOver;
+
+      const remaining  = b.amount - actualSpent;
+      const overBudget = actualSpent > b.amount;
+      const overPace   = carryOver > 0.005; // over plan from carry-over
+      const pct        = Math.min(Math.round(actualSpent / b.amount * 100), 100);
+
+      return {
+        totalDays, dailyRate, daysElapsed, daysCompleted,
+        actualSpent, spentBeforeToday, spentToday,
+        carryOver, todayBudget, remaining,
+        overBudget, overPace, pct,
+        notStarted, isActive, isFinished
+      };
+    }
+
+    function renderBudgets() {
+      const el = document.getElementById('budget-cards');
+      if (!budgets.length) {
+        el.innerHTML = '<p class="empty-msg">No budgets yet. Set one above.</p>';
+        return;
+      }
+
+      const fmtD = d => {
+        const dt = new Date(d + 'T12:00:00');
+        return `${dt.getDate()} ${dt.toLocaleDateString('en-US', { month: 'short' })} ${dt.getFullYear()}`;
+      };
+
+      el.innerHTML = budgets.map(b => {
+        const s = calcBudget(b);
+        const barColor = s.overBudget ? 'var(--red)' : s.overPace ? '#BA7517' : '#1D9E75';
+
+        const filterDesc = [];
+        if (b.cat && b.cat !== 'all') filterDesc.push(b.cat);
+        if (b.group) filterDesc.push(`Group: ${b.group}`);
+        const filterStr = filterDesc.length ? filterDesc.join(' · ') : 'All expenses';
+
+        let statusClass = 'on-track';
+        let statusMsg   = '';
+        const dayLabel  = `Day ${s.daysElapsed}/${s.totalDays}`;
+
+        if (s.notStarted) {
+          const daysUntil = Math.round((new Date(b.start_date + 'T00:00:00') - new Date(new Date().toISOString().slice(0,10) + 'T00:00:00')) / 86400000);
+          statusClass = 'not-started';
+          statusMsg = `Starts in ${daysUntil} day${daysUntil !== 1 ? 's' : ''} · Target: ${fmt(s.dailyRate)}/day`;
+        } else if (s.isFinished) {
+          statusClass = s.overBudget ? 'over-budget' : 'finished-ok';
+          statusMsg = s.overBudget
+            ? `Completed · Over budget by ${fmt(s.actualSpent - b.amount)}`
+            : `Completed · Saved ${fmt(s.remaining)}`;
+        } else if (s.overBudget) {
+          statusClass = 'over-budget';
+          statusMsg = `${dayLabel} · Over total budget by ${fmt(s.actualSpent - b.amount)}`;
+        } else if (s.overPace) {
+          statusClass = 'over-pace';
+          statusMsg = s.todayBudget <= 0
+            ? `${dayLabel} · Today's allowance used up (−${fmt(-s.todayBudget)} carry-over from overspend)`
+            : `${dayLabel} · Today's budget: ${fmt(s.todayBudget)} (−${fmt(s.carryOver)} carry-over from overspend)`;
+        } else {
+          const surplus = -s.carryOver;
+          statusMsg = surplus > 0.005
+            ? `${dayLabel} · Today's budget: ${fmt(s.todayBudget)} (+${fmt(surplus)} carry-over from unused days)`
+            : `${dayLabel} · Today's budget: ${fmt(s.dailyRate)} · Exactly on base plan`;
+        }
+
+        return `
+        <div class="budget-card">
+          <div class="budget-card-header">
+            <div>
+              <div class="budget-card-name">${b.name}</div>
+              <div class="budget-card-meta">${filterStr} · ${fmtD(b.start_date)} – ${fmtD(b.end_date)}</div>
+            </div>
+            <button class="del-btn" onclick="deleteBudget('${b.id}')" aria-label="Delete">
+              <i class="ti ti-trash" aria-hidden="true"></i>
+            </button>
+          </div>
+          <div class="budget-amounts">
+            <span>Spent <strong>${fmt(s.actualSpent)}</strong> of ${fmt(b.amount)}</span>
+            <span style="color:var(--text-muted)">base plan: ${fmt(s.dailyRate)}/day</span>
+          </div>
+          <div class="budget-progress-row">
+            <div class="budget-progress-track">
+              <div class="budget-progress-fill" style="width:${s.pct}%;background:${barColor}"></div>
+            </div>
+            <span class="budget-progress-pct">${s.pct}%</span>
+          </div>
+          <div class="budget-status ${statusClass}">${statusMsg}</div>
+        </div>`;
+      }).join('');
+    }
+
+    async function addBudget() {
+      const name   = document.getElementById('inp-budget-name').value.trim();
+      const amount = parseFloat(document.getElementById('inp-budget-amount').value);
+      const cat    = document.getElementById('inp-budget-cat').value;
+      const group  = document.getElementById('inp-budget-group').value;
+      const start  = document.getElementById('inp-budget-start').value;
+      const end    = document.getElementById('inp-budget-end').value;
+
+      if (!name || !amount || amount <= 0 || !start || !end) {
+        alert('Please fill in name, amount, start date, and end date.');
+        return;
+      }
+      if (end < start) {
+        alert('End date must be on or after start date.');
+        return;
+      }
+      try {
+        const row = await api('/api/budgets', 'POST', { name, amount, cat, group, start_date: start, end_date: end });
+        budgets.unshift(row);
+        document.getElementById('inp-budget-name').value   = '';
+        document.getElementById('inp-budget-amount').value = '';
+        renderBudgets();
+      } catch (e) {
+        showError('Could not save budget.');
+      }
+    }
+
+    async function deleteBudget(id) {
+      if (!confirm('Delete this budget?')) return;
+      try {
+        await api(`/api/budgets/${id}`, 'DELETE');
+        budgets = budgets.filter(b => b.id !== id);
+        renderBudgets();
+      } catch (e) {
+        showError('Could not delete budget.');
+      }
+    }
+
     function renderAll() {
       renderMetrics();
       renderGroups();
       renderFilterCats();
       renderList();
+      renderBudgets();
       renderCharts();
       renderTimelineChart();
     }
 
     /* ── Boot ── */
     async function init() {
-      document.getElementById('inp-date').value = new Date().toISOString().slice(0, 10);
+      const today = new Date().toISOString().slice(0, 10);
+      document.getElementById('inp-date').value          = today;
+      document.getElementById('inp-budget-start').value  = today;
+      const d30 = new Date(); d30.setDate(d30.getDate() + 29);
+      document.getElementById('inp-budget-end').value    = d30.toISOString().slice(0, 10);
       renderCatOptions();
+      renderBudgetCatOptions();
       try {
-        [transactions, groups] = await Promise.all([api('/api/expenses'), api('/api/groups')]);
+        [transactions, groups, budgets] = await Promise.all([
+          api('/api/expenses'), api('/api/groups'), api('/api/budgets')
+        ]);
         renderAll();
       } catch (e) {
         const el = document.getElementById('error-banner');
