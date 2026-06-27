@@ -122,8 +122,17 @@
     .type-dot.income  { background: var(--green); }
     .type-dot.expense { background: var(--red); }
 
+    .date-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 0 6px; }
+    .date-header:first-child { padding-top: 2px; }
+    .date-header-left { display: flex; align-items: center; gap: 6px; }
+    .date-header-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .date-header-net { font-size: 13px; font-weight: 500; }
+    .date-toggle-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 0; display: flex; align-items: center; transition: transform 0.2s; line-height: 1; }
+    .date-toggle-btn:hover { color: var(--text-primary); }
+    .date-group-items { overflow: hidden; transition: opacity 0.15s; }
+    .date-group-items.collapsed { display: none; }
+
     .exp-desc { flex: 1; font-size: 14px; min-width: 80px; }
-    .exp-date { font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
     .exp-amount { font-size: 15px; font-weight: 500; flex-shrink: 0; }
     .exp-amount.income  { color: var(--green); }
     .exp-amount.expense { color: var(--red); }
@@ -286,11 +295,24 @@
           <button class="type-btn expense" onclick="setChartType('bar')">Bar</button>
         </div>
       </div>
-      <div class="type-toggle" id="granularity-toggle" style="margin-bottom:14px;">
+      <div class="type-toggle" id="granularity-toggle" style="margin-bottom:10px;">
         <button class="type-btn income active" onclick="setGranularity('daily')">Daily</button>
         <button class="type-btn income" onclick="setGranularity('weekly')">Weekly</button>
         <button class="type-btn income" onclick="setGranularity('monthly')">Monthly</button>
         <button class="type-btn income" onclick="setGranularity('yearly')">Yearly</button>
+      </div>
+      <div class="filter-row" style="margin-bottom:14px;">
+        <select class="filter-sel" id="chart-filter-type" onchange="setChartFilter()">
+          <option value="">All types</option>
+          <option value="expense">Expense only</option>
+          <option value="income">Income only</option>
+        </select>
+        <select class="filter-sel" id="chart-filter-cat" onchange="setChartFilter()">
+          <option value="">All categories</option>
+        </select>
+        <select class="filter-sel" id="chart-filter-group" onchange="setChartFilter()">
+          <option value="">All groups</option>
+        </select>
       </div>
       <div id="chart-timeline-empty" class="empty-msg" style="display:none">No data yet.</div>
       <canvas id="chart-timeline" height="220"></canvas>
@@ -346,10 +368,11 @@
       { bg: '#FCEBEB', text: '#791F1F', bar: '#E24B4A' },
     ];
 
-    let transactions = [];
-    let groups       = [];
-    let budgets      = [];
-    let currentType  = 'expense';
+    let transactions   = [];
+    let groups         = [];
+    let budgets        = [];
+    let currentType    = 'expense';
+    let collapsedDates = new Set();
 
     function groupColor(name) {
       const idx = groups.indexOf(name);
@@ -505,6 +528,26 @@
     }
 
     /* ── Render ── */
+    function toggleDate(date) {
+      if (collapsedDates.has(date)) {
+        collapsedDates.delete(date);
+      } else {
+        collapsedDates.add(date);
+      }
+      const collapsed = collapsedDates.has(date);
+      document.getElementById('dg-' + date).classList.toggle('collapsed', collapsed);
+      document.getElementById('toggle-' + date).style.transform = collapsed ? 'rotate(-90deg)' : '';
+    }
+
+    function friendlyDate(dateStr) {
+      const today = new Date().toISOString().slice(0, 10);
+      const yest  = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      if (dateStr === today) return 'Today';
+      if (dateStr === yest)  return 'Yesterday';
+      const d = new Date(dateStr + 'T12:00:00');
+      return `${d.getDate()} ${d.toLocaleDateString('en-US', { month: 'short' })} ${d.getFullYear()}`;
+    }
+
     function renderList() {
       const fType  = document.getElementById('filter-type').value;
       const fGroup = document.getElementById('filter-group').value;
@@ -520,25 +563,52 @@
         return;
       }
 
-      el.innerHTML = rows.map(t => {
-        const gc = t.group ? groupColor(t.group) : null;
-        const groupBadge = t.group
-          ? `<span class="cat-badge" style="background:${gc.bg};color:${gc.text}">${t.group}</span>`
-          : '';
-        const sign = t.type === 'income' ? '+' : '−';
+      // Group by date, newest first
+      const byDate = {};
+      rows.forEach(t => { (byDate[t.date] = byDate[t.date] || []).push(t); });
+      const dates = Object.keys(byDate).sort().reverse();
+
+      el.innerHTML = dates.map(date => {
+        const dayRows = byDate[date];
+        const net     = dayRows.reduce((s, t) => s + (t.type === 'income' ? t.amount : -t.amount), 0);
+        const netSign = net >= 0 ? '+' : '−';
+        const netColor = net >= 0 ? 'var(--green)' : 'var(--red)';
+
+        const items = dayRows.map(t => {
+          const gc         = t.group ? groupColor(t.group) : null;
+          const groupBadge = t.group
+            ? `<span class="cat-badge" style="background:${gc.bg};color:${gc.text}">${t.group}</span>`
+            : '';
+          const sign = t.type === 'income' ? '+' : '−';
+          return `
+          <div class="exp-item">
+            <span class="type-dot ${t.type}"></span>
+            <div class="exp-badges">
+              <span class="cat-badge" style="background:${CAT_BG[t.cat]||'#F1EFE8'};color:${CAT_TEXT[t.cat]||'#444441'}">${t.cat}</span>
+              ${groupBadge}
+            </div>
+            <span class="exp-desc">${t.desc}</span>
+            <span class="exp-amount ${t.type}">${sign}${fmt(t.amount)}</span>
+            <button class="del-btn" onclick="deleteTransaction('${t.id}')" aria-label="Delete">
+              <i class="ti ti-trash" aria-hidden="true"></i>
+            </button>
+          </div>`;
+        }).join('');
+
+        const isCollapsed = collapsedDates.has(date);
         return `
-        <div class="exp-item">
-          <span class="type-dot ${t.type}"></span>
-          <div class="exp-badges">
-            <span class="cat-badge" style="background:${CAT_BG[t.cat]||'#F1EFE8'};color:${CAT_TEXT[t.cat]||'#444441'}">${t.cat}</span>
-            ${groupBadge}
+        <div class="date-header">
+          <div class="date-header-left">
+            <button class="date-toggle-btn" id="toggle-${date}" onclick="toggleDate('${date}')"
+              style="transform:${isCollapsed ? 'rotate(-90deg)' : ''}">
+              <i class="ti ti-chevron-down" aria-hidden="true"></i>
+            </button>
+            <span class="date-header-label">${friendlyDate(date)}</span>
           </div>
-          <span class="exp-desc">${t.desc}</span>
-          <span class="exp-date">${t.date}</span>
-          <span class="exp-amount ${t.type}">${sign}${fmt(t.amount)}</span>
-          <button class="del-btn" onclick="deleteTransaction('${t.id}')" aria-label="Delete">
-            <i class="ti ti-trash" aria-hidden="true"></i>
-          </button>
+          <span class="date-header-net" style="color:${netColor}">${netSign}${fmt(Math.abs(net))}</span>
+        </div>
+        <div class="date-group-items${isCollapsed ? ' collapsed' : ''}" id="dg-${date}">
+          ${items}
         </div>`;
       }).join('');
     }
@@ -593,9 +663,37 @@
     }
 
     /* ── Timeline chart ── */
-    let timelineChart = null;
-    let chartType     = 'line';
-    let granularity   = 'daily';
+    let timelineChart    = null;
+    let chartType        = 'line';
+    let granularity      = 'daily';
+    let chartFilterType  = '';
+    let chartFilterCat   = '';
+    let chartFilterGroup = '';
+
+    function setChartFilter() {
+      chartFilterType = document.getElementById('chart-filter-type').value;
+      renderChartFilters(); // refresh category list to match selected type first
+      chartFilterCat   = document.getElementById('chart-filter-cat').value;
+      chartFilterGroup = document.getElementById('chart-filter-group').value;
+      renderTimelineChart();
+    }
+
+    function renderChartFilters() {
+      const catSel  = document.getElementById('chart-filter-cat');
+      const prevCat = catSel.value;
+      // only show categories that exist for the selected type
+      const source  = chartFilterType
+        ? transactions.filter(t => t.type === chartFilterType)
+        : transactions;
+      const allCats = [...new Set(source.map(t => t.cat))].sort();
+      catSel.innerHTML = '<option value="">All categories</option>' + allCats.map(c => `<option>${c}</option>`).join('');
+      catSel.value = allCats.includes(prevCat) ? prevCat : '';
+
+      const grpSel  = document.getElementById('chart-filter-group');
+      const prevGrp = grpSel.value;
+      grpSel.innerHTML = '<option value="">All groups</option>' + groups.map(g => `<option>${g}</option>`).join('');
+      if (groups.includes(prevGrp)) grpSel.value = prevGrp;
+    }
 
     function setChartType(type) {
       chartType = type;
@@ -650,8 +748,13 @@
       canvas.style.display   = 'block';
       emptyMsg.style.display = 'none';
 
+      let filtered = transactions;
+      if (chartFilterType)  filtered = filtered.filter(t => t.type  === chartFilterType);
+      if (chartFilterCat)   filtered = filtered.filter(t => t.cat   === chartFilterCat);
+      if (chartFilterGroup) filtered = filtered.filter(t => t.group === chartFilterGroup);
+
       const incByKey = {}, expByKey = {};
-      transactions.forEach(t => {
+      filtered.forEach(t => {
         const key = getGroupKey(t.date);
         if (t.type === 'income') incByKey[key] = (incByKey[key] || 0) + t.amount;
         else                     expByKey[key] = (expByKey[key] || 0) + t.amount;
@@ -659,8 +762,11 @@
 
       const keys        = [...new Set([...Object.keys(incByKey), ...Object.keys(expByKey)])].sort();
       const labels      = keys.map(formatKey);
-      const incomeData  = keys.map(k => incByKey[k]  || 0);
+      const incomeData  = keys.map(k => incByKey[k] || 0);
       const expenseData = keys.map(k => expByKey[k] || 0);
+
+      const showIncome  = !chartFilterType || chartFilterType === 'income';
+      const showExpense = !chartFilterType || chartFilterType === 'expense';
 
       const dark      = window.matchMedia('(prefers-color-scheme: dark)').matches;
       const textColor = dark ? '#b4b2a9' : '#5f5e5a';
@@ -674,19 +780,19 @@
         data: {
           labels,
           datasets: [
-            {
+            showIncome && {
               label: 'Income',  data: incomeData,
               borderColor: '#1D9E75', backgroundColor: isLine ? '#1D9E7525' : '#1D9E7560',
               fill: isLine, tension: 0.35, pointRadius: 4, pointHoverRadius: 6, borderWidth: 2,
               ...(isLine ? {} : { borderWidth: 0, borderRadius: 4 }),
             },
-            {
+            showExpense && {
               label: 'Expense', data: expenseData,
               borderColor: '#E24B4A', backgroundColor: isLine ? '#E24B4A25' : '#E24B4A60',
               fill: isLine, tension: 0.35, pointRadius: 4, pointHoverRadius: 6, borderWidth: 2,
               ...(isLine ? {} : { borderWidth: 0, borderRadius: 4 }),
             },
-          ]
+          ].filter(Boolean)
         },
         options: {
           responsive: true,
@@ -889,6 +995,7 @@
       renderList();
       renderBudgets();
       renderCharts();
+      renderChartFilters();
       renderTimelineChart();
     }
 
