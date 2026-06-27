@@ -225,7 +225,13 @@
 
     <!-- Timeline chart -->
     <div class="card">
-      <p class="card-title">Income vs expenses over time</p>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <p class="card-title" style="margin:0">Income vs expenses over time</p>
+        <div class="type-toggle" id="graph-type-toggle">
+          <button class="type-btn income active" onclick="setChartType('line')">Line</button>
+          <button class="type-btn expense" onclick="setChartType('bar')">Bar</button>
+        </div>
+      </div>
       <div id="chart-timeline-empty" class="empty-msg" style="display:none">No data yet.</div>
       <canvas id="chart-timeline" height="220"></canvas>
     </div>
@@ -540,6 +546,20 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script>
     let timelineChart = null;
+    let chartType     = 'line';
+
+    function setChartType(type) {
+      chartType = type;
+      document.querySelectorAll('#graph-type-toggle .type-btn').forEach(b => {
+        const isLine = b.textContent.trim() === 'Line';
+        b.classList.toggle('active', (type === 'line') === isLine);
+      });
+      renderTimelineChart();
+    }
+
+    function fmtK(val) {
+      return '฿' + Number(val).toLocaleString('en-US', { maximumFractionDigits: 0 });
+    }
 
     function renderTimelineChart() {
       const canvas   = document.getElementById('chart-timeline');
@@ -571,24 +591,33 @@
       const textColor = dark ? '#b4b2a9' : '#5f5e5a';
       const gridColor = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
 
+      const isLine = chartType === 'line';
+      const incDataset = {
+        label: 'Income', data: incomeData, borderColor: '#1D9E75',
+        ...(isLine
+          ? { type: 'line', backgroundColor: '#1D9E7520', fill: true, tension: 0.35, pointRadius: 4, pointHoverRadius: 6, borderWidth: 2 }
+          : { type: 'bar',  backgroundColor: '#1D9E7550', borderWidth: 1.5, borderRadius: 4 })
+      };
+      const expDataset = {
+        label: 'Expense', data: expenseData, borderColor: '#E24B4A',
+        ...(isLine
+          ? { type: 'line', backgroundColor: '#E24B4A20', fill: true, tension: 0.35, pointRadius: 4, pointHoverRadius: 6, borderWidth: 2 }
+          : { type: 'bar',  backgroundColor: '#E24B4A50', borderWidth: 1.5, borderRadius: 4 })
+      };
+
       if (timelineChart) { timelineChart.destroy(); }
 
       timelineChart = new Chart(canvas, {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [
-            { label: 'Income',  data: incomeData,  backgroundColor: '#1D9E7540', borderColor: '#1D9E75', borderWidth: 1.5, borderRadius: 4 },
-            { label: 'Expense', data: expenseData, backgroundColor: '#E24B4A40', borderColor: '#E24B4A', borderWidth: 1.5, borderRadius: 4 },
-          ]
-        },
+        type: isLine ? 'line' : 'bar',
+        data: { labels, datasets: [incDataset, expDataset] },
         options: {
           responsive: true,
+          interaction: { mode: 'index', intersect: false },
           plugins: {
             legend: { labels: { color: textColor, boxWidth: 12, padding: 16 } },
             tooltip: {
               callbacks: {
-                label: ctx => ` ${ctx.dataset.label}: ฿${ctx.parsed.y.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+                label: ctx => ` ${ctx.dataset.label}: ${fmtK(ctx.parsed.y)}`
               }
             }
           },
@@ -596,10 +625,7 @@
             x: { ticks: { color: textColor }, grid: { color: gridColor } },
             y: {
               beginAtZero: true,
-              ticks: {
-                color: textColor,
-                callback: val => '฿' + Number(val).toLocaleString('en-US', { maximumFractionDigits: 0 })
-              },
+              ticks: { color: textColor, callback: fmtK },
               grid: { color: gridColor }
             }
           }
