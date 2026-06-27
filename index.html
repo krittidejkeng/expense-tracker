@@ -208,7 +208,7 @@
       </div>
       <div class="form-row">
         <input type="text" id="inp-desc" placeholder="Description">
-        <input type="number" id="inp-amount" placeholder="Amount (฿)" min="0" step="0.01">
+        <input type="text" inputmode="decimal" id="inp-amount" placeholder="Amount (฿)" oninput="fmtInput(this)">
       </div>
       <div class="form-row">
         <select id="inp-cat"></select>
@@ -252,7 +252,7 @@
         <div class="form-row">
           <input type="text" id="inp-budget-name" placeholder="Budget name (e.g. July Food)" maxlength="50"
                  onkeydown="if(event.key==='Enter') addBudget()">
-          <input type="number" id="inp-budget-amount" placeholder="Total budget (฿)" min="1" step="1">
+          <input type="text" inputmode="decimal" id="inp-budget-amount" placeholder="Total budget (฿)" oninput="fmtInput(this)">
         </div>
         <div class="form-row">
           <select id="inp-budget-cat"></select>
@@ -360,6 +360,17 @@
       return '฿' + Math.abs(Number(n)).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
     }
 
+    function fmtInput(el) {
+      const raw   = el.value.replace(/[^0-9.]/g, '');
+      const parts = raw.split('.');
+      parts[0]    = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      el.value    = parts.slice(0, 2).join(parts.length > 1 ? '.' : '');
+    }
+
+    function parseAmount(val) {
+      return parseFloat(String(val).replace(/,/g, ''));
+    }
+
     function showError(msg) {
       const el = document.getElementById('error-banner');
       el.textContent = msg;
@@ -461,7 +472,7 @@
     /* ── Transaction CRUD ── */
     async function addTransaction() {
       const desc   = document.getElementById('inp-desc').value.trim();
-      const amount = parseFloat(document.getElementById('inp-amount').value);
+      const amount = parseAmount(document.getElementById('inp-amount').value);
       const cat    = document.getElementById('inp-cat').value;
       const group  = document.getElementById('inp-group').value;
       const date   = document.getElementById('inp-date').value;
@@ -835,7 +846,7 @@
 
     async function addBudget() {
       const name   = document.getElementById('inp-budget-name').value.trim();
-      const amount = parseFloat(document.getElementById('inp-budget-amount').value);
+      const amount = parseAmount(document.getElementById('inp-budget-amount').value);
       const cat    = document.getElementById('inp-budget-cat').value;
       const group  = document.getElementById('inp-budget-group').value;
       const start  = document.getElementById('inp-budget-start').value;
