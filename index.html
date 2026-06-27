@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Expense Tracker</title>
+  <title>Money Tracker</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -21,6 +21,12 @@
       --accent: #378ADD;
       --accent-hover: #185FA5;
       --on-accent: #ffffff;
+      --green: #1D9E75;
+      --green-bg: #E1F5EE;
+      --green-text: #085041;
+      --red: #E24B4A;
+      --red-bg: #FCEBEB;
+      --red-text: #791F1F;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -45,8 +51,7 @@
     }
 
     .container { max-width: 720px; margin: 0 auto; }
-
-    h1 { font-size: 22px; font-weight: 500; margin-bottom: 1.5rem; color: var(--text-primary); }
+    h1 { font-size: 22px; font-weight: 500; margin-bottom: 1.5rem; }
 
     .metrics {
       display: grid;
@@ -54,10 +59,11 @@
       gap: 10px;
       margin-bottom: 1.5rem;
     }
-
     .metric { background: var(--surface-1); border-radius: var(--radius); padding: 0.85rem 1rem; }
     .metric-label { font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
     .metric-value { font-size: 22px; font-weight: 500; }
+    .metric-value.positive { color: var(--green); }
+    .metric-value.negative { color: var(--red); }
 
     .card {
       background: var(--surface-2);
@@ -66,71 +72,62 @@
       padding: 1rem 1.25rem;
       margin-bottom: 1.5rem;
     }
-
     .card-title { font-size: 15px; font-weight: 500; margin-bottom: 14px; }
 
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
     @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
 
     input, select {
-      width: 100%;
-      height: 36px;
-      padding: 0 10px;
+      width: 100%; height: 36px; padding: 0 10px;
       border: 0.5px solid var(--border-strong);
       border-radius: var(--radius);
       background: var(--surface-1);
       color: var(--text-primary);
-      font-size: 14px;
-      font-family: inherit;
-      outline: none;
-      transition: border-color 0.15s;
+      font-size: 14px; font-family: inherit;
+      outline: none; transition: border-color 0.15s;
     }
-
     input:focus, select:focus { border-color: var(--accent); }
 
-    button.primary {
-      background: var(--accent);
-      color: var(--on-accent);
-      border: none;
-      border-radius: var(--radius);
-      padding: 8px 20px;
-      font-size: 14px;
-      font-family: inherit;
-      font-weight: 500;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+    /* Type toggle */
+    .type-toggle { display: flex; gap: 0; margin-bottom: 12px; border-radius: var(--radius); overflow: hidden; border: 0.5px solid var(--border-strong); width: fit-content; }
+    .type-btn {
+      padding: 7px 20px; font-size: 14px; font-family: inherit; font-weight: 500;
+      border: none; cursor: pointer; background: var(--surface-1); color: var(--text-secondary);
+      transition: background 0.15s, color 0.15s;
     }
-    button.primary:hover { background: var(--accent-hover); }
+    .type-btn.expense.active { background: var(--red-bg); color: var(--red-text); }
+    .type-btn.income.active  { background: var(--green-bg); color: var(--green-text); }
+
+    button.submit-btn {
+      border: none; border-radius: var(--radius);
+      padding: 8px 20px; font-size: 14px; font-family: inherit; font-weight: 500;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+      transition: background 0.15s;
+    }
+    button.submit-btn.expense { background: var(--red); color: #fff; }
+    button.submit-btn.expense:hover { background: #c43a39; }
+    button.submit-btn.income  { background: var(--green); color: #fff; }
+    button.submit-btn.income:hover  { background: #0f6e56; }
 
     .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
-    .filter-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .filter-row { display: flex; gap: 8px; flex-wrap: wrap; }
     .filter-sel { width: auto; height: 30px; font-size: 13px; }
 
-    .exp-item { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 0.5px solid var(--border); flex-wrap: wrap; }
+    .exp-item { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 0.5px solid var(--border); }
     .exp-item:last-child { border-bottom: none; }
-    .exp-badges { display: flex; gap: 5px; flex-shrink: 0; }
+    .exp-badges { display: flex; gap: 5px; flex-shrink: 0; flex-wrap: wrap; }
+    .cat-badge { font-size: 11px; font-weight: 500; padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
+    .type-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .type-dot.income  { background: var(--green); }
+    .type-dot.expense { background: var(--red); }
 
-    .cat-badge {
-      font-size: 11px; font-weight: 500;
-      padding: 3px 8px; border-radius: 20px;
-      white-space: nowrap;
-    }
-    .group-badge {
-      font-size: 11px; font-weight: 500;
-      padding: 3px 8px; border-radius: 20px;
-      white-space: nowrap;
-      background: var(--surface-1);
-      color: var(--text-secondary);
-      border: 0.5px solid var(--border-strong);
-    }
-
-    .exp-desc { flex: 1; font-size: 14px; min-width: 100px; }
+    .exp-desc { flex: 1; font-size: 14px; min-width: 80px; }
     .exp-date { font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
     .exp-amount { font-size: 15px; font-weight: 500; flex-shrink: 0; }
+    .exp-amount.income  { color: var(--green); }
+    .exp-amount.expense { color: var(--red); }
     .del-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 16px; line-height: 1; padding: 0 4px; flex-shrink: 0; }
-    .del-btn:hover { color: #e24b4a; }
+    .del-btn:hover { color: var(--red); }
 
     .empty-msg { text-align: center; color: var(--text-muted); font-size: 14px; padding: 1.5rem 0; }
 
@@ -146,34 +143,26 @@
     .groups-add-row button { background: none; border: 0.5px solid var(--border-strong); border-radius: var(--radius); padding: 0 14px; height: 36px; font-size: 14px; font-family: inherit; cursor: pointer; color: var(--text-primary); white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
     .groups-add-row button:hover { background: var(--surface-1); }
     .groups-pills { display: flex; flex-wrap: wrap; gap: 8px; }
-    .group-pill {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 5px 10px 5px 12px;
-      border-radius: 20px;
-      font-size: 13px; font-weight: 500;
-      border: 0.5px solid transparent;
-      cursor: default;
-    }
+    .group-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 500; border: 0.5px solid transparent; }
     .group-pill .pill-del { background: none; border: none; cursor: pointer; opacity: 0.5; font-size: 14px; line-height: 1; padding: 0; color: inherit; display: flex; align-items: center; }
     .group-pill .pill-del:hover { opacity: 1; }
-    .group-pill.active { outline: 2px solid currentColor; outline-offset: 1px; }
     .no-groups { font-size: 13px; color: var(--text-muted); }
   </style>
 </head>
 <body>
-  <div id="error-banner" style="display:none;background:#FCEBEB;color:#791F1F;border:0.5px solid #F09595;border-radius:var(--radius);padding:10px 14px;margin-bottom:1rem;font-size:14px;"></div>
+  <div id="error-banner" style="display:none;background:var(--red-bg);color:var(--red-text);border:0.5px solid #F09595;border-radius:var(--radius);padding:10px 14px;margin-bottom:1rem;font-size:14px;max-width:720px;margin-left:auto;margin-right:auto;"></div>
 
   <div class="container">
-    <h1><i class="ti ti-wallet" aria-hidden="true"></i> Expense Tracker</h1>
+    <h1><i class="ti ti-arrows-exchange" aria-hidden="true"></i> Money Tracker</h1>
 
     <div class="metrics">
-      <div class="metric"><p class="metric-label">Total spent</p><p class="metric-value" id="m-total">฿0</p></div>
-      <div class="metric"><p class="metric-label">This month</p><p class="metric-value" id="m-month">฿0</p></div>
-      <div class="metric"><p class="metric-label">Expenses</p><p class="metric-value" id="m-count">0</p></div>
-      <div class="metric"><p class="metric-label">Top category</p><p class="metric-value" id="m-top" style="font-size:15px">—</p></div>
+      <div class="metric"><p class="metric-label">Total in</p><p class="metric-value positive" id="m-in">฿0</p></div>
+      <div class="metric"><p class="metric-label">Total out</p><p class="metric-value negative" id="m-out">฿0</p></div>
+      <div class="metric"><p class="metric-label">Balance</p><p class="metric-value" id="m-balance">฿0</p></div>
+      <div class="metric"><p class="metric-label">This month net</p><p class="metric-value" id="m-month">฿0</p></div>
     </div>
 
-    <!-- Groups management -->
+    <!-- Groups -->
     <div class="card">
       <p class="card-title"><i class="ti ti-tag" aria-hidden="true"></i> Groups</p>
       <div class="groups-add-row">
@@ -181,29 +170,26 @@
                onkeydown="if(event.key==='Enter') addGroup()">
         <button onclick="addGroup()"><i class="ti ti-plus" aria-hidden="true"></i> Add group</button>
       </div>
-      <div class="groups-pills" id="groups-pills">
-        <span class="no-groups">No groups yet.</span>
-      </div>
+      <div class="groups-pills" id="groups-pills"><span class="no-groups">No groups yet.</span></div>
     </div>
 
-    <!-- Add expense -->
+    <!-- Add transaction -->
     <div class="card">
-      <p class="card-title">Add expense</p>
+      <p class="card-title">Add transaction</p>
+      <div class="type-toggle">
+        <button class="type-btn expense active" onclick="setType('expense')">
+          <i class="ti ti-arrow-up" aria-hidden="true"></i> Expense
+        </button>
+        <button class="type-btn income" onclick="setType('income')">
+          <i class="ti ti-arrow-down" aria-hidden="true"></i> Income
+        </button>
+      </div>
       <div class="form-row">
-        <input type="text" id="inp-desc" placeholder="Description (e.g. lunch at Siam)">
+        <input type="text" id="inp-desc" placeholder="Description">
         <input type="number" id="inp-amount" placeholder="Amount (฿)" min="0" step="0.01">
       </div>
       <div class="form-row">
-        <select id="inp-cat">
-          <option value="">Select category</option>
-          <option>Food &amp; drinks</option>
-          <option>Transport</option>
-          <option>Shopping</option>
-          <option>Bills &amp; utilities</option>
-          <option>Health</option>
-          <option>Entertainment</option>
-          <option>Other</option>
-        </select>
+        <select id="inp-cat"></select>
         <select id="inp-group">
           <option value="">No group (optional)</option>
         </select>
@@ -211,28 +197,26 @@
       <div class="form-row">
         <input type="date" id="inp-date">
       </div>
-      <button class="primary" onclick="addExpense()">
-        <i class="ti ti-plus" aria-hidden="true"></i> Add expense
+      <button class="submit-btn expense" id="submit-btn" onclick="addTransaction()">
+        <i class="ti ti-plus" aria-hidden="true"></i> <span id="submit-label">Add expense</span>
       </button>
     </div>
 
-    <!-- Expense list -->
+    <!-- Transaction list -->
     <div class="card">
       <div class="list-header">
-        <p class="card-title" style="margin:0">Expenses</p>
+        <p class="card-title" style="margin:0">Transactions</p>
         <div class="filter-row">
+          <select class="filter-sel" id="filter-type" onchange="renderList()">
+            <option value="">All</option>
+            <option value="expense">Expenses</option>
+            <option value="income">Income</option>
+          </select>
           <select class="filter-sel" id="filter-group" onchange="renderList()">
             <option value="">All groups</option>
           </select>
           <select class="filter-sel" id="filter-cat" onchange="renderList()">
             <option value="">All categories</option>
-            <option>Food &amp; drinks</option>
-            <option>Transport</option>
-            <option>Shopping</option>
-            <option>Bills &amp; utilities</option>
-            <option>Health</option>
-            <option>Entertainment</option>
-            <option>Other</option>
           </select>
         </div>
       </div>
@@ -241,28 +225,42 @@
 
     <!-- Charts -->
     <div class="card">
-      <p class="card-title">Spending by category</p>
-      <div id="chart-cat"></div>
+      <p class="card-title">Expenses by category</p>
+      <div id="chart-exp"></div>
     </div>
 
     <div class="card">
-      <p class="card-title">Spending by group</p>
+      <p class="card-title">Income by category</p>
+      <div id="chart-inc"></div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">By group</p>
       <div id="chart-group"></div>
     </div>
   </div>
 
   <script>
+    const EXPENSE_CATS = ['Food & drinks','Transport','Shopping','Bills & utilities','Health','Entertainment','Other'];
+    const INCOME_CATS  = ['Salary','Freelance','Business','Investment','Gift','Other'];
+
     const CAT_COLORS = {
       'Food & drinks': '#1D9E75', 'Transport': '#378ADD', 'Shopping': '#D4537E',
-      'Bills & utilities': '#BA7517', 'Health': '#534AB7', 'Entertainment': '#D85A30', 'Other': '#888780'
+      'Bills & utilities': '#BA7517', 'Health': '#534AB7', 'Entertainment': '#D85A30',
+      'Salary': '#1D9E75', 'Freelance': '#378ADD', 'Business': '#534AB7',
+      'Investment': '#BA7517', 'Gift': '#D4537E', 'Other': '#888780'
     };
     const CAT_BG = {
       'Food & drinks': '#E1F5EE', 'Transport': '#E6F1FB', 'Shopping': '#FBEAF0',
-      'Bills & utilities': '#FAEEDA', 'Health': '#EEEDFE', 'Entertainment': '#FAECE7', 'Other': '#F1EFE8'
+      'Bills & utilities': '#FAEEDA', 'Health': '#EEEDFE', 'Entertainment': '#FAECE7',
+      'Salary': '#E1F5EE', 'Freelance': '#E6F1FB', 'Business': '#EEEDFE',
+      'Investment': '#FAEEDA', 'Gift': '#FBEAF0', 'Other': '#F1EFE8'
     };
     const CAT_TEXT = {
       'Food & drinks': '#085041', 'Transport': '#0C447C', 'Shopping': '#72243E',
-      'Bills & utilities': '#633806', 'Health': '#3C3489', 'Entertainment': '#712B13', 'Other': '#444441'
+      'Bills & utilities': '#633806', 'Health': '#3C3489', 'Entertainment': '#712B13',
+      'Salary': '#085041', 'Freelance': '#0C447C', 'Business': '#3C3489',
+      'Investment': '#633806', 'Gift': '#72243E', 'Other': '#444441'
     };
     const GROUP_PALETTE = [
       { bg: '#E6F1FB', text: '#0C447C', bar: '#378ADD' },
@@ -275,8 +273,9 @@
       { bg: '#FCEBEB', text: '#791F1F', bar: '#E24B4A' },
     ];
 
-    let expenses = [];
-    let groups   = [];
+    let transactions = [];
+    let groups       = [];
+    let currentType  = 'expense';
 
     function groupColor(name) {
       const idx = groups.indexOf(name);
@@ -284,7 +283,7 @@
     }
 
     function fmt(n) {
-      return '฿' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+      return '฿' + Math.abs(Number(n)).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
     }
 
     function showError(msg) {
@@ -305,6 +304,33 @@
       return res.json();
     }
 
+    /* ── Type toggle ── */
+    function setType(type) {
+      currentType = type;
+      document.querySelectorAll('.type-btn').forEach(b => {
+        b.classList.toggle('active', b.classList.contains(type));
+      });
+      const btn = document.getElementById('submit-btn');
+      const lbl = document.getElementById('submit-label');
+      btn.className = `submit-btn ${type}`;
+      lbl.textContent = type === 'expense' ? 'Add expense' : 'Add income';
+      renderCatOptions();
+    }
+
+    function renderCatOptions() {
+      const cats = currentType === 'expense' ? EXPENSE_CATS : INCOME_CATS;
+      document.getElementById('inp-cat').innerHTML =
+        '<option value="">Select category</option>' +
+        cats.map(c => `<option>${c}</option>`).join('');
+    }
+
+    function renderFilterCats() {
+      const all = [...new Set(transactions.map(t => t.cat))].sort();
+      document.getElementById('filter-cat').innerHTML =
+        '<option value="">All categories</option>' +
+        all.map(c => `<option>${c}</option>`).join('');
+    }
+
     /* ── Groups ── */
     async function addGroup() {
       const name = document.getElementById('inp-group-name').value.trim();
@@ -320,12 +346,12 @@
     }
 
     async function deleteGroup(name) {
-      const hasExpenses = expenses.some(e => e.group === name);
-      if (hasExpenses && !confirm(`Delete group "${name}"? Expenses tagged with it will become untagged.`)) return;
+      const has = transactions.some(t => t.group === name);
+      if (has && !confirm(`Delete group "${name}"? Transactions tagged with it will become untagged.`)) return;
       try {
         await api(`/api/groups/${encodeURIComponent(name)}`, 'DELETE');
         groups = groups.filter(g => g !== name);
-        expenses = expenses.map(e => e.group === name ? { ...e, group: '' } : e);
+        transactions = transactions.map(t => t.group === name ? { ...t, group: '' } : t);
         renderGroups();
         renderAll();
       } catch (e) {
@@ -335,36 +361,30 @@
 
     function renderGroups() {
       const el = document.getElementById('groups-pills');
-      if (!groups.length) {
-        el.innerHTML = '<span class="no-groups">No groups yet. Add one above.</span>';
-      } else {
-        el.innerHTML = groups.map(g => {
-          const c = groupColor(g);
-          return `<span class="group-pill" style="background:${c.bg};color:${c.text};border-color:${c.bg}">
-            ${g}
-            <button class="pill-del" onclick="deleteGroup('${g.replace(/'/g, "\\'")}') " aria-label="Delete group ${g}">
-              <i class="ti ti-x" aria-hidden="true"></i>
-            </button>
-          </span>`;
-        }).join('');
-      }
+      el.innerHTML = groups.length
+        ? groups.map(g => {
+            const c = groupColor(g);
+            return `<span class="group-pill" style="background:${c.bg};color:${c.text}">
+              ${g}
+              <button class="pill-del" onclick="deleteGroup('${g.replace(/'/g,"\\'")}')">
+                <i class="ti ti-x" aria-hidden="true"></i>
+              </button>
+            </span>`;
+          }).join('')
+        : '<span class="no-groups">No groups yet. Add one above.</span>';
 
-      const groupSel  = document.getElementById('inp-group');
-      const filterSel = document.getElementById('filter-group');
-      const prevGroup  = groupSel.value;
-      const prevFilter = filterSel.value;
-
-      groupSel.innerHTML  = '<option value="">No group (optional)</option>' +
-        groups.map(g => `<option value="${g}">${g}</option>`).join('');
-      filterSel.innerHTML = '<option value="">All groups</option>' +
-        groups.map(g => `<option value="${g}">${g}</option>`).join('');
-
-      if (groups.includes(prevGroup))  groupSel.value  = prevGroup;
-      if (groups.includes(prevFilter)) filterSel.value = prevFilter;
+      const gs = document.getElementById('inp-group');
+      const gf = document.getElementById('filter-group');
+      const pv = gs.value, pf = gf.value;
+      const opts = groups.map(g => `<option>${g}</option>`).join('');
+      gs.innerHTML = '<option value="">No group (optional)</option>' + opts;
+      gf.innerHTML = '<option value="">All groups</option>' + opts;
+      if (groups.includes(pv)) gs.value = pv;
+      if (groups.includes(pf)) gf.value = pf;
     }
 
-    /* ── Expense CRUD ── */
-    async function addExpense() {
+    /* ── Transaction CRUD ── */
+    async function addTransaction() {
       const desc   = document.getElementById('inp-desc').value.trim();
       const amount = parseFloat(document.getElementById('inp-amount').value);
       const cat    = document.getElementById('inp-cat').value;
@@ -376,57 +396,61 @@
         return;
       }
       try {
-        const row = await api('/api/expenses', 'POST', { desc, amount, cat, group, date });
-        expenses.unshift(row);
+        const row = await api('/api/expenses', 'POST', { type: currentType, desc, amount, cat, group, date });
+        transactions.unshift(row);
         document.getElementById('inp-desc').value   = '';
         document.getElementById('inp-amount').value = '';
         document.getElementById('inp-cat').value    = '';
         document.getElementById('inp-group').value  = '';
         renderAll();
       } catch (e) {
-        showError('Could not save expense. Is the server running?');
+        showError('Could not save. Is the server running?');
       }
     }
 
-    async function deleteExpense(id) {
+    async function deleteTransaction(id) {
       try {
         await api(`/api/expenses/${id}`, 'DELETE');
-        expenses = expenses.filter(e => e.id !== id);
+        transactions = transactions.filter(t => t.id !== id);
         renderAll();
       } catch (e) {
-        showError('Could not delete expense.');
+        showError('Could not delete transaction.');
       }
     }
 
     /* ── Render ── */
     function renderList() {
-      const filterCat   = document.getElementById('filter-cat').value;
-      const filterGroup = document.getElementById('filter-group').value;
-      let filtered = expenses;
-      if (filterCat)   filtered = filtered.filter(e => e.cat === filterCat);
-      if (filterGroup) filtered = filtered.filter(e => e.group === filterGroup);
+      const fType  = document.getElementById('filter-type').value;
+      const fGroup = document.getElementById('filter-group').value;
+      const fCat   = document.getElementById('filter-cat').value;
+      let rows = transactions;
+      if (fType)  rows = rows.filter(t => t.type === fType);
+      if (fGroup) rows = rows.filter(t => t.group === fGroup);
+      if (fCat)   rows = rows.filter(t => t.cat === fCat);
 
       const el = document.getElementById('exp-list');
-      if (!filtered.length) {
-        el.innerHTML = '<p class="empty-msg">No expenses match the current filters.</p>';
+      if (!rows.length) {
+        el.innerHTML = '<p class="empty-msg">No transactions match the current filters.</p>';
         return;
       }
 
-      el.innerHTML = filtered.map(e => {
-        const gc = e.group ? groupColor(e.group) : null;
-        const groupBadge = e.group
-          ? `<span class="cat-badge" style="background:${gc.bg};color:${gc.text}">${e.group}</span>`
+      el.innerHTML = rows.map(t => {
+        const gc = t.group ? groupColor(t.group) : null;
+        const groupBadge = t.group
+          ? `<span class="cat-badge" style="background:${gc.bg};color:${gc.text}">${t.group}</span>`
           : '';
+        const sign = t.type === 'income' ? '+' : '−';
         return `
         <div class="exp-item">
+          <span class="type-dot ${t.type}"></span>
           <div class="exp-badges">
-            <span class="cat-badge" style="background:${CAT_BG[e.cat]||'#F1EFE8'};color:${CAT_TEXT[e.cat]||'#444441'}">${e.cat}</span>
+            <span class="cat-badge" style="background:${CAT_BG[t.cat]||'#F1EFE8'};color:${CAT_TEXT[t.cat]||'#444441'}">${t.cat}</span>
             ${groupBadge}
           </div>
-          <span class="exp-desc">${e.desc}</span>
-          <span class="exp-date">${e.date}</span>
-          <span class="exp-amount">${fmt(e.amount)}</span>
-          <button class="del-btn" onclick="deleteExpense('${e.id}')" aria-label="Delete expense">
+          <span class="exp-desc">${t.desc}</span>
+          <span class="exp-date">${t.date}</span>
+          <span class="exp-amount ${t.type}">${sign}${fmt(t.amount)}</span>
+          <button class="del-btn" onclick="deleteTransaction('${t.id}')" aria-label="Delete">
             <i class="ti ti-trash" aria-hidden="true"></i>
           </button>
         </div>`;
@@ -434,18 +458,26 @@
     }
 
     function renderMetrics() {
-      const total = expenses.reduce((s, e) => s + e.amount, 0);
-      const now   = new Date();
-      const ym    = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      const monthTotal = expenses.filter(e => e.date.startsWith(ym)).reduce((s, e) => s + e.amount, 0);
-      const catTotals  = {};
-      expenses.forEach(e => { catTotals[e.cat] = (catTotals[e.cat] || 0) + e.amount; });
-      const topCat = Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0];
+      const totalIn  = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const totalOut = transactions.filter(t => t.type !== 'income').reduce((s, t) => s + t.amount, 0);
+      const balance  = totalIn - totalOut;
 
-      document.getElementById('m-total').textContent = fmt(total);
-      document.getElementById('m-month').textContent = fmt(monthTotal);
-      document.getElementById('m-count').textContent = expenses.length;
-      document.getElementById('m-top').textContent   = topCat ? topCat[0] : '—';
+      const now = new Date();
+      const ym  = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const monthIn  = transactions.filter(t => t.type === 'income'   && t.date.startsWith(ym)).reduce((s, t) => s + t.amount, 0);
+      const monthOut = transactions.filter(t => t.type !== 'income'   && t.date.startsWith(ym)).reduce((s, t) => s + t.amount, 0);
+      const monthNet = monthIn - monthOut;
+
+      document.getElementById('m-in').textContent      = fmt(totalIn);
+      document.getElementById('m-out').textContent     = fmt(totalOut);
+
+      const balEl = document.getElementById('m-balance');
+      balEl.textContent = (balance >= 0 ? '+' : '−') + fmt(balance);
+      balEl.className   = 'metric-value ' + (balance >= 0 ? 'positive' : 'negative');
+
+      const monEl = document.getElementById('m-month');
+      monEl.textContent = (monthNet >= 0 ? '+' : '−') + fmt(monthNet);
+      monEl.className   = 'metric-value ' + (monthNet >= 0 ? 'positive' : 'negative');
     }
 
     function renderBarChart(elId, entries, colorFn) {
@@ -456,37 +488,43 @@
         <div class="bar-row">
           <span class="bar-label" title="${label}">${label}</span>
           <div class="bar-track">
-            <div class="bar-fill" style="width:${Math.round(val / max * 100)}%;background:${colorFn(label)}"></div>
+            <div class="bar-fill" style="width:${Math.round(val/max*100)}%;background:${colorFn(label)}"></div>
           </div>
           <span class="bar-val">${fmt(val)}</span>
         </div>`).join('');
     }
 
     function renderCharts() {
-      const catTotals = {}, groupTotals = {};
-      expenses.forEach(e => {
-        catTotals[e.cat] = (catTotals[e.cat] || 0) + e.amount;
-        if (e.group) groupTotals[e.group] = (groupTotals[e.group] || 0) + e.amount;
+      const expCats = {}, incCats = {}, grpTotals = {};
+      transactions.forEach(t => {
+        if (t.type === 'income') incCats[t.cat] = (incCats[t.cat] || 0) + t.amount;
+        else                     expCats[t.cat] = (expCats[t.cat] || 0) + t.amount;
+        if (t.group) grpTotals[t.group] = (grpTotals[t.group] || 0) + t.amount;
       });
-      renderBarChart('chart-cat',   Object.entries(catTotals).sort((a, b) => b[1] - a[1]),   cat  => CAT_COLORS[cat] || '#888780');
-      renderBarChart('chart-group', Object.entries(groupTotals).sort((a, b) => b[1] - a[1]), name => groupColor(name).bar);
+      renderBarChart('chart-exp',   Object.entries(expCats).sort((a,b)=>b[1]-a[1]),   cat  => CAT_COLORS[cat]      || '#888780');
+      renderBarChart('chart-inc',   Object.entries(incCats).sort((a,b)=>b[1]-a[1]),   cat  => CAT_COLORS[cat]      || '#888780');
+      renderBarChart('chart-group', Object.entries(grpTotals).sort((a,b)=>b[1]-a[1]), name => groupColor(name).bar);
     }
 
-    function renderAll() { renderMetrics(); renderGroups(); renderList(); renderCharts(); }
+    function renderAll() {
+      renderMetrics();
+      renderGroups();
+      renderFilterCats();
+      renderList();
+      renderCharts();
+    }
 
     /* ── Boot ── */
     async function init() {
       document.getElementById('inp-date').value = new Date().toISOString().slice(0, 10);
+      renderCatOptions();
       try {
-        [expenses, groups] = await Promise.all([
-          api('/api/expenses'),
-          api('/api/groups'),
-        ]);
+        [transactions, groups] = await Promise.all([api('/api/expenses'), api('/api/groups')]);
         renderAll();
       } catch (e) {
-        document.getElementById('error-banner').textContent =
-          'Cannot connect to server. Run: uvicorn main:app --reload';
-        document.getElementById('error-banner').style.display = 'block';
+        const el = document.getElementById('error-banner');
+        el.textContent = 'Cannot connect to server. Run: venv/bin/uvicorn main:app --reload';
+        el.style.display = 'block';
       }
     }
 

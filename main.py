@@ -10,7 +10,7 @@ BASE_DIR     = os.path.dirname(__file__)
 DATA_DIR     = os.path.join(BASE_DIR, 'data')
 EXPENSES_CSV = os.path.join(DATA_DIR, 'expenses.csv')
 GROUPS_CSV   = os.path.join(DATA_DIR, 'groups.csv')
-EXP_COLS     = ['id', 'desc', 'amount', 'cat', 'group', 'date']
+EXP_COLS     = ['id', 'type', 'desc', 'amount', 'cat', 'group', 'date']
 GRP_COLS     = ['name']
 
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -22,6 +22,7 @@ def load_exp() -> pd.DataFrame:
     df = pd.read_csv(EXPENSES_CSV, dtype=str)
     df['amount'] = df['amount'].astype(float)
     df['group']  = df['group'].fillna('')
+    df['type']   = df['type'].fillna('expense') if 'type' in df.columns else 'expense'
     return df
 
 def save_exp(df: pd.DataFrame) -> None:
@@ -37,6 +38,7 @@ def save_grp(df: pd.DataFrame) -> None:
 
 
 class ExpenseIn(BaseModel):
+    type:   str = 'expense'
     desc:   str
     amount: float
     cat:    str
@@ -63,6 +65,7 @@ def add_expense(e: ExpenseIn):
     df  = load_exp()
     row = {
         'id':     str(int(time.time() * 1000)),
+        'type':   e.type,
         'desc':   e.desc,
         'amount': e.amount,
         'cat':    e.cat,
