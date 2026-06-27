@@ -561,13 +561,9 @@
     function formatKey(key) {
       if (granularity === 'yearly')  return key;
       if (granularity === 'monthly') return new Date(key + '-02T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-      // daily or weekly — show "27 Jun" or "27 Jun 2026" depending on how many years are in data
-      const d = new Date(key + 'T12:00:00');
-      const multiYear = [...new Set(transactions.map(t => t.date.slice(0, 4)))].length > 1;
-      const opts = multiYear
-        ? { day: 'numeric', month: 'short', year: 'numeric' }
-        : { day: 'numeric', month: 'short' };
-      return (granularity === 'weekly' ? 'W ' : '') + d.toLocaleDateString('en-US', opts);
+      const d     = new Date(key + 'T12:00:00');
+      const month = d.toLocaleDateString('en-US', { month: 'short' });
+      return `${d.getDate()} ${month} ${d.getFullYear()}`;
     }
 
     function fmtK(val) {
