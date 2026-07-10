@@ -1,0 +1,16 @@
+name = "keng-money"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+workers_dev = true
+preview_urls = false
+
+# Bundle ../../index.html as a text string (imported by src/index.js)
+[[rules]]
+type = "Text"
+globs = ["**/*.html"]
+fallthrough = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "money-tracker"
+database_id = "58c1320c-1f4f-41aa-abc9-5c448f18ddfb"

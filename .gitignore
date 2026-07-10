@@ -3,3 +3,11 @@ venv/
 __pycache__/
 *.pyc
 .env
+.DS_Store
+.claude/
+
+# Cloudflare — import_data.sql holds personal data, never commit it
+cloudflare/import_data.sql
+cloudflare/.wrangler/
+cloudflare/node_modules/
+cloudflare/.dev.vars

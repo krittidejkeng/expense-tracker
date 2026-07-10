@@ -133,6 +133,7 @@
     .date-group-items.collapsed { display: none; }
 
     .exp-desc { flex: 1; font-size: 14px; min-width: 80px; }
+    .exp-date { font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
     .exp-amount { font-size: 15px; font-weight: 500; flex-shrink: 0; }
     .exp-amount.income  { color: var(--green); }
     .exp-amount.expense { color: var(--red); }
@@ -158,6 +159,20 @@
     .group-pill .pill-del:hover { opacity: 1; }
     .no-groups { font-size: 13px; color: var(--text-muted); }
 
+    /* Fixed Costs */
+    .fixed-summary { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--text-secondary); background: var(--surface-1); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 16px; }
+    .fixed-summary strong { color: var(--text-primary); }
+    .fixed-cards { display: flex; flex-direction: column; gap: 10px; }
+    .fixed-card { border: 0.5px solid var(--border-strong); border-radius: var(--radius); padding: 12px 14px; }
+    .fixed-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
+    .fixed-card-name { font-size: 14px; font-weight: 600; margin-bottom: 5px; }
+    .fixed-card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .fixed-card-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .fixed-card-amount { font-size: 16px; font-weight: 600; color: var(--red); }
+    .fixed-card-due { font-size: 12px; margin-top: 8px; font-weight: 500; }
+    .pay-btn { border: none; border-radius: var(--radius); padding: 5px 14px; font-size: 13px; font-family: inherit; font-weight: 500; cursor: pointer; background: var(--accent); color: #fff; transition: background 0.15s; white-space: nowrap; }
+    .pay-btn:hover { background: var(--accent-hover); }
+
     /* Budgets */
     .budget-form-section { margin-bottom: 16px; }
     .budget-cards { display: flex; flex-direction: column; gap: 10px; }
@@ -171,6 +186,10 @@
     .budget-progress-track { flex: 1; height: 6px; background: var(--surface-0); border-radius: 3px; overflow: hidden; }
     .budget-progress-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
     .budget-progress-pct { font-size: 12px; color: var(--text-muted); width: 34px; text-align: right; flex-shrink: 0; }
+    .budget-today { display: flex; justify-content: space-between; align-items: baseline; margin: 4px 0 8px; padding: 8px 12px; border-radius: var(--radius); background: var(--surface-0); }
+    .budget-today-label { font-size: 12px; color: var(--text-secondary); }
+    .budget-today-value { font-size: 17px; font-weight: 600; }
+
     .budget-status { font-size: 13px; font-weight: 500; }
     .budget-status.on-track    { color: var(--green); }
     .budget-status.over-pace   { color: #BA7517; }
@@ -181,7 +200,8 @@
   </style>
 </head>
 <body>
-  <div id="error-banner" style="display:none;background:var(--red-bg);color:var(--red-text);border:0.5px solid #F09595;border-radius:var(--radius);padding:10px 14px;margin-bottom:1rem;font-size:14px;max-width:720px;margin-left:auto;margin-right:auto;"></div>
+  <div id="error-banner"   style="display:none;background:var(--red-bg);color:var(--red-text);border:0.5px solid #F09595;border-radius:var(--radius);padding:10px 14px;margin-bottom:1rem;font-size:14px;max-width:720px;margin-left:auto;margin-right:auto;"></div>
+  <div id="success-banner" style="display:none;background:var(--green-bg);color:var(--green-text);border:0.5px solid #6DCCA9;border-radius:var(--radius);padding:10px 14px;margin-bottom:1rem;font-size:14px;max-width:720px;margin-left:auto;margin-right:auto;"></div>
 
   <div class="container">
     <h1><i class="ti ti-arrows-exchange" aria-hidden="true"></i> Money Tracker</h1>
@@ -190,7 +210,13 @@
       <div class="metric"><p class="metric-label">Total in</p><p class="metric-value positive" id="m-in">฿0</p></div>
       <div class="metric"><p class="metric-label">Total out</p><p class="metric-value negative" id="m-out">฿0</p></div>
       <div class="metric"><p class="metric-label">Balance</p><p class="metric-value" id="m-balance">฿0</p></div>
-      <div class="metric"><p class="metric-label">This month net</p><p class="metric-value" id="m-month">฿0</p></div>
+      <div class="metric"><p class="metric-label" id="m-month-label">This month net</p><p class="metric-value" id="m-month">฿0</p></div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:1.5rem;font-size:13px;color:var(--text-secondary);flex-wrap:wrap;">
+      <i class="ti ti-calendar-dollar" aria-hidden="true"></i>
+      <span>Month starts on (payday):</span>
+      <select id="cycle-start-day" onchange="saveCycleStart()" style="width:auto;height:30px;font-size:13px;"></select>
     </div>
 
     <!-- Groups -->
@@ -238,6 +264,11 @@
       <div class="list-header">
         <p class="card-title" style="margin:0">Transactions</p>
         <div class="filter-row">
+          <select class="filter-sel" id="list-groupby" onchange="setListGroupBy()">
+            <option value="day">By day</option>
+            <option value="month">By month</option>
+            <option value="cycle">By pay period</option>
+          </select>
           <select class="filter-sel" id="filter-type" onchange="renderList()">
             <option value="">All</option>
             <option value="expense">Expenses</option>
@@ -252,6 +283,35 @@
         </div>
       </div>
       <div id="exp-list"></div>
+    </div>
+
+    <!-- Fixed Costs -->
+    <div class="card">
+      <p class="card-title"><i class="ti ti-calendar-repeat" aria-hidden="true"></i> Fixed Costs</p>
+      <div id="fixed-summary"></div>
+      <div style="margin-bottom:16px;">
+        <div class="form-row">
+          <input type="text" id="inp-fc-name" placeholder="Name (e.g. Condo rent)" maxlength="50"
+                 onkeydown="if(event.key==='Enter') addFixedCost()">
+          <input type="text" inputmode="decimal" id="inp-fc-amount" placeholder="Amount (฿)" oninput="fmtInput(this)">
+        </div>
+        <div class="form-row">
+          <select id="inp-fc-cat"></select>
+          <select id="inp-fc-group"><option value="">No group (optional)</option></select>
+        </div>
+        <div class="form-row">
+          <select id="inp-fc-recurrence" onchange="renderFcDueInput()">
+            <option value="monthly">Monthly (fixed day)</option>
+            <option value="monthly_flex">Monthly (flexible date)</option>
+            <option value="yearly">Yearly</option>
+          </select>
+          <div id="fc-due-wrapper"></div>
+        </div>
+        <button class="submit-btn expense" onclick="addFixedCost()">
+          <i class="ti ti-plus" aria-hidden="true"></i> Add fixed cost
+        </button>
+      </div>
+      <div class="fixed-cards" id="fixed-cards"></div>
     </div>
 
     <!-- Budgets -->
@@ -333,6 +393,18 @@
       <p class="card-title">By group</p>
       <div id="chart-group"></div>
     </div>
+
+    <!-- Backup / export -->
+    <div class="card">
+      <p class="card-title"><i class="ti ti-download" aria-hidden="true"></i> Backup — download CSV</p>
+      <div class="filter-row">
+        <a class="filter-sel" style="display:inline-flex;align-items:center;padding:0 12px;text-decoration:none;color:var(--text-primary);border:0.5px solid var(--border-strong);border-radius:var(--radius);background:var(--surface-1);" href="/api/export/expenses.csv" download>Transactions</a>
+        <a class="filter-sel" style="display:inline-flex;align-items:center;padding:0 12px;text-decoration:none;color:var(--text-primary);border:0.5px solid var(--border-strong);border-radius:var(--radius);background:var(--surface-1);" href="/api/export/groups.csv" download>Groups</a>
+        <a class="filter-sel" style="display:inline-flex;align-items:center;padding:0 12px;text-decoration:none;color:var(--text-primary);border:0.5px solid var(--border-strong);border-radius:var(--radius);background:var(--surface-1);" href="/api/export/budgets.csv" download>Budgets</a>
+        <a class="filter-sel" style="display:inline-flex;align-items:center;padding:0 12px;text-decoration:none;color:var(--text-primary);border:0.5px solid var(--border-strong);border-radius:var(--radius);background:var(--surface-1);" href="/api/export/fixed_costs.csv" download>Fixed costs</a>
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:10px;">Files open in Excel or pandas. Download these regularly as your backup.</p>
+    </div>
   </div>
 
   <script>
@@ -371,8 +443,11 @@
     let transactions   = [];
     let groups         = [];
     let budgets        = [];
+    let fixedCosts     = [];
     let currentType    = 'expense';
-    let collapsedDates = new Set();
+    let listGroupBy    = 'day';  // 'day' | 'month' | 'cycle'
+    let groupToggles   = {};     // key -> true (expanded) / false (collapsed); default: only newest expanded
+    let cycleStartDay  = 1;   // day of month the pay-cycle/"month" begins on
 
     function groupColor(name) {
       const idx = groups.indexOf(name);
@@ -390,8 +465,54 @@
       el.value    = parts.slice(0, 2).join(parts.length > 1 ? '.' : '');
     }
 
+    // Format a Date as YYYY-MM-DD using LOCAL components (avoids UTC off-by-one)
+    function localYMD(d) {
+      const p = n => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    }
+
+    // Current pay-cycle window [startStr, endStr) based on cycleStartDay
+    function currentCycle() {
+      const now = new Date(); now.setHours(0, 0, 0, 0);
+      const startDayFor = (y, m) => Math.min(cycleStartDay, new Date(y, m + 1, 0).getDate());
+      let sy = now.getFullYear(), sm = now.getMonth();
+      if (now.getDate() < startDayFor(sy, sm)) {   // before this month's start → previous cycle
+        const prev = new Date(sy, sm - 1, 1); sy = prev.getFullYear(); sm = prev.getMonth();
+      }
+      const start = new Date(sy, sm, startDayFor(sy, sm));
+      const nx    = new Date(sy, sm + 1, 1);
+      const end   = new Date(nx.getFullYear(), nx.getMonth(), startDayFor(nx.getFullYear(), nx.getMonth())); // exclusive
+      return { startStr: localYMD(start), endStr: localYMD(end), start, end };
+    }
+
+    function renderCycleSelect() {
+      const sel = document.getElementById('cycle-start-day');
+      sel.innerHTML = Array.from({ length: 28 }, (_, i) => {
+        const d = i + 1;
+        const label = d === 1 ? '1st (calendar month)' : ordinal(d);
+        return `<option value="${d}">${label}</option>`;
+      }).join('');
+      sel.value = String(cycleStartDay);
+    }
+
+    async function saveCycleStart() {
+      const day = parseInt(document.getElementById('cycle-start-day').value);
+      cycleStartDay = day;
+      try {
+        await api('/api/settings', 'PUT', { cycle_start_day: day });
+      } catch (e) { showError('Could not save setting.'); }
+      renderMetrics();
+    }
+
     function parseAmount(val) {
       return parseFloat(String(val).replace(/,/g, ''));
+    }
+
+    function showSuccess(msg) {
+      const el = document.getElementById('success-banner');
+      el.textContent = msg;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 3000);
     }
 
     function showError(msg) {
@@ -490,6 +611,7 @@
       if (groups.includes(pv)) gs.value = pv;
       if (groups.includes(pf)) gf.value = pf;
       renderBudgetGroupOptions();
+      renderFcGroupOptions();
     }
 
     /* ── Transaction CRUD ── */
@@ -528,15 +650,45 @@
     }
 
     /* ── Render ── */
-    function toggleDate(date) {
-      if (collapsedDates.has(date)) {
-        collapsedDates.delete(date);
-      } else {
-        collapsedDates.add(date);
+    function setListGroupBy() {
+      listGroupBy  = document.getElementById('list-groupby').value;
+      groupToggles = {}; // reset: only newest group expanded again
+      renderList();
+    }
+
+    function toggleGroup(key) {
+      const el = document.getElementById('dg-' + key);
+      const wasExpanded = !el.classList.contains('collapsed');
+      groupToggles[key] = !wasExpanded;
+      el.classList.toggle('collapsed', wasExpanded);
+      document.getElementById('toggle-' + key).style.transform = wasExpanded ? 'rotate(-90deg)' : '';
+    }
+
+    // Cycle start date (YYYY-MM-DD) of the pay period containing dateStr
+    function cycleKeyFor(dateStr) {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const startDayFor = (yy, mm) => Math.min(cycleStartDay, new Date(yy, mm + 1, 0).getDate());
+      let sy = y, sm = m - 1;
+      if (d < startDayFor(sy, sm)) { const prev = new Date(sy, sm - 1, 1); sy = prev.getFullYear(); sm = prev.getMonth(); }
+      return localYMD(new Date(sy, sm, startDayFor(sy, sm)));
+    }
+
+    function listGroupLabel(key) {
+      if (listGroupBy === 'day') return friendlyDate(key);
+      if (listGroupBy === 'month') {
+        const now = new Date();
+        const cur = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        const lbl = new Date(key + '-02T12:00:00').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        return key === cur ? `This month · ${lbl}` : lbl;
       }
-      const collapsed = collapsedDates.has(date);
-      document.getElementById('dg-' + date).classList.toggle('collapsed', collapsed);
-      document.getElementById('toggle-' + date).style.transform = collapsed ? 'rotate(-90deg)' : '';
+      // cycle: key = cycle start date; end = day before next cycle start
+      const start = new Date(key + 'T12:00:00');
+      const nm    = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+      const nextStart = new Date(nm.getFullYear(), nm.getMonth(), Math.min(cycleStartDay, new Date(nm.getFullYear(), nm.getMonth() + 1, 0).getDate()));
+      const endIncl   = new Date(nextStart.getFullYear(), nextStart.getMonth(), nextStart.getDate() - 1);
+      const f = dt => `${dt.getDate()} ${dt.toLocaleDateString('en-US', { month: 'short' })} ${dt.getFullYear()}`;
+      const lbl = `${f(start)} – ${f(endIncl)}`;
+      return key === currentCycle().startStr ? `Current period · ${lbl}` : lbl;
     }
 
     function friendlyDate(dateStr) {
@@ -563,23 +715,30 @@
         return;
       }
 
-      // Group by date, newest first
-      const byDate = {};
-      rows.forEach(t => { (byDate[t.date] = byDate[t.date] || []).push(t); });
-      const dates = Object.keys(byDate).sort().reverse();
+      // Group by day / month / pay period, newest first
+      const keyOf = t => listGroupBy === 'day'   ? t.date
+                       : listGroupBy === 'month' ? t.date.slice(0, 7)
+                       : cycleKeyFor(t.date);
+      const byKey = {};
+      rows.forEach(t => { const k = keyOf(t); (byKey[k] = byKey[k] || []).push(t); });
+      const keys = Object.keys(byKey).sort().reverse();
 
-      el.innerHTML = dates.map(date => {
-        const dayRows = byDate[date];
-        const net     = dayRows.reduce((s, t) => s + (t.type === 'income' ? t.amount : -t.amount), 0);
+      el.innerHTML = keys.map((key, idx) => {
+        const grpRows = byKey[key].slice().sort((a, b) => b.date.localeCompare(a.date));
+        const net     = grpRows.reduce((s, t) => s + (t.type === 'income' ? t.amount : -t.amount), 0);
         const netSign = net >= 0 ? '+' : '−';
         const netColor = net >= 0 ? 'var(--green)' : 'var(--red)';
 
-        const items = dayRows.map(t => {
+        const items = grpRows.map(t => {
           const gc         = t.group ? groupColor(t.group) : null;
           const groupBadge = t.group
             ? `<span class="cat-badge" style="background:${gc.bg};color:${gc.text}">${t.group}</span>`
             : '';
           const sign = t.type === 'income' ? '+' : '−';
+          // show each row's date when the group spans more than one day
+          const dRow  = new Date(t.date + 'T12:00:00');
+          const dateStr = listGroupBy === 'day' ? ''
+            : `<span class="exp-date">${dRow.getDate()} ${dRow.toLocaleDateString('en-US', { month: 'short' })}</span>`;
           return `
           <div class="exp-item">
             <span class="type-dot ${t.type}"></span>
@@ -588,6 +747,7 @@
               ${groupBadge}
             </div>
             <span class="exp-desc">${t.desc}</span>
+            ${dateStr}
             <span class="exp-amount ${t.type}">${sign}${fmt(t.amount)}</span>
             <button class="del-btn" onclick="deleteTransaction('${t.id}')" aria-label="Delete">
               <i class="ti ti-trash" aria-hidden="true"></i>
@@ -595,19 +755,21 @@
           </div>`;
         }).join('');
 
-        const isCollapsed = collapsedDates.has(date);
+        // default: only the newest group (idx 0) is expanded; user toggles override
+        const isExpanded  = key in groupToggles ? groupToggles[key] : idx === 0;
+        const isCollapsed = !isExpanded;
         return `
         <div class="date-header">
           <div class="date-header-left">
-            <button class="date-toggle-btn" id="toggle-${date}" onclick="toggleDate('${date}')"
+            <button class="date-toggle-btn" id="toggle-${key}" onclick="toggleGroup('${key}')"
               style="transform:${isCollapsed ? 'rotate(-90deg)' : ''}">
               <i class="ti ti-chevron-down" aria-hidden="true"></i>
             </button>
-            <span class="date-header-label">${friendlyDate(date)}</span>
+            <span class="date-header-label">${listGroupLabel(key)}</span>
           </div>
           <span class="date-header-net" style="color:${netColor}">${netSign}${fmt(Math.abs(net))}</span>
         </div>
-        <div class="date-group-items${isCollapsed ? ' collapsed' : ''}" id="dg-${date}">
+        <div class="date-group-items${isCollapsed ? ' collapsed' : ''}" id="dg-${key}">
           ${items}
         </div>`;
       }).join('');
@@ -618,10 +780,10 @@
       const totalOut = transactions.filter(t => t.type !== 'income').reduce((s, t) => s + t.amount, 0);
       const balance  = totalIn - totalOut;
 
-      const now = new Date();
-      const ym  = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      const monthIn  = transactions.filter(t => t.type === 'income'   && t.date.startsWith(ym)).reduce((s, t) => s + t.amount, 0);
-      const monthOut = transactions.filter(t => t.type !== 'income'   && t.date.startsWith(ym)).reduce((s, t) => s + t.amount, 0);
+      const cyc = currentCycle();
+      const inCycle  = t => t.date >= cyc.startStr && t.date < cyc.endStr;
+      const monthIn  = transactions.filter(t => t.type === 'income' && inCycle(t)).reduce((s, t) => s + t.amount, 0);
+      const monthOut = transactions.filter(t => t.type !== 'income' && inCycle(t)).reduce((s, t) => s + t.amount, 0);
       const monthNet = monthIn - monthOut;
 
       document.getElementById('m-in').textContent      = fmt(totalIn);
@@ -634,6 +796,18 @@
       const monEl = document.getElementById('m-month');
       monEl.textContent = (monthNet >= 0 ? '+' : '−') + fmt(monthNet);
       monEl.className   = 'metric-value ' + (monthNet >= 0 ? 'positive' : 'negative');
+
+      // Label + tooltip reflect the cycle window
+      const fmtShort = s => { const d = new Date(s + 'T12:00:00'); return `${d.getDate()} ${d.toLocaleDateString('en-US',{month:'short'})}`; };
+      const lblEl = document.getElementById('m-month-label');
+      const endInclusive = localYMD(new Date(cyc.end.getFullYear(), cyc.end.getMonth(), cyc.end.getDate() - 1));
+      if (cycleStartDay === 1) {
+        lblEl.textContent = 'This month net';
+        lblEl.title = '';
+      } else {
+        lblEl.textContent = 'This cycle net';
+        lblEl.title = `${fmtShort(cyc.startStr)} – ${fmtShort(endInclusive)}`;
+      }
     }
 
     function renderBarChart(elId, entries, colorFn) {
@@ -809,6 +983,190 @@
       });
     }
 
+    /* ── Fixed Costs ── */
+    function ordinal(n) {
+      const s = ['th','st','nd','rd'], v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    }
+
+    function nextDueDate(fc) {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      if (fc.recurrence === 'monthly') {
+        const day = parseInt(fc.due_day);
+        let d = new Date(today.getFullYear(), today.getMonth(), day);
+        if (d < today) d = new Date(today.getFullYear(), today.getMonth() + 1, day);
+        return d;
+      } else {
+        const [m, d] = fc.due_day.split('-').map(Number);
+        let dt = new Date(today.getFullYear(), m - 1, d);
+        if (dt < today) dt = new Date(today.getFullYear() + 1, m - 1, d);
+        return dt;
+      }
+    }
+
+    function renderFcCatOptions() {
+      document.getElementById('inp-fc-cat').innerHTML =
+        '<option value="">Select category</option>' +
+        EXPENSE_CATS.map(c => `<option>${c}</option>`).join('');
+    }
+
+    function renderFcGroupOptions() {
+      const sel = document.getElementById('inp-fc-group');
+      if (!sel) return;
+      const pv = sel.value;
+      sel.innerHTML = '<option value="">No group (optional)</option>' + groups.map(g => `<option>${g}</option>`).join('');
+      if (groups.includes(pv)) sel.value = pv;
+    }
+
+    function renderFcDueInput() {
+      const rec = document.getElementById('inp-fc-recurrence').value;
+      const el  = document.getElementById('fc-due-wrapper');
+      if (rec === 'monthly') {
+        const opts = Array.from({length: 31}, (_, i) =>
+          `<option value="${i + 1}">${ordinal(i + 1)} of the month</option>`).join('');
+        el.innerHTML = `<select id="inp-fc-due-day" style="width:100%">${opts}</select>`;
+      } else if (rec === 'yearly') {
+        el.innerHTML = `<input type="date" id="inp-fc-due-day" style="width:100%" placeholder="Pick a date (year ignored)">`;
+      } else {
+        el.innerHTML = `<div style="font-size:13px;color:var(--text-muted);display:flex;align-items:center;height:36px;">Pay anytime each month</div>`;
+      }
+    }
+
+    function fcDoneThisMonth(fc) {
+      const ym = new Date().toISOString().slice(0, 7);
+      return transactions.some(t => t.type === 'expense' && t.desc === fc.name && t.date.startsWith(ym));
+    }
+
+    function renderFixedCosts() {
+      const summaryEl = document.getElementById('fixed-summary');
+      const cardsEl   = document.getElementById('fixed-cards');
+
+      const monthlyTotal = fixedCosts.filter(fc => fc.recurrence === 'monthly' || fc.recurrence === 'monthly_flex').reduce((s, fc) => s + fc.amount, 0);
+      const yearlyTotal  = fixedCosts.filter(fc => fc.recurrence === 'yearly').reduce((s, fc) => s + fc.amount, 0);
+      const totalPerMonth = monthlyTotal + yearlyTotal / 12;
+
+      summaryEl.innerHTML = fixedCosts.length ? `
+        <span>Monthly: <strong>${fmt(monthlyTotal)}/mo</strong></span>
+        <span>Yearly: <strong>${fmt(yearlyTotal)}/yr</strong> (${fmt(yearlyTotal / 12)}/mo)</span>
+        <span>Total committed: <strong>${fmt(totalPerMonth)}/mo</strong></span>` : '';
+
+      if (!fixedCosts.length) {
+        cardsEl.innerHTML = '<p class="empty-msg">No fixed costs yet. Add one above.</p>';
+        return;
+      }
+
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+
+      cardsEl.innerHTML = fixedCosts.map(fc => {
+        const fmtDate = d => `${d.getDate()} ${d.toLocaleDateString('en-US', {month:'short'})} ${d.getFullYear()}`;
+
+        let dueLabel, dueColor, scheduleLabel;
+        if (fc.recurrence === 'monthly_flex') {
+          const done    = fcDoneThisMonth(fc);
+          dueLabel      = done ? 'Done this month' : 'Not logged yet this month';
+          dueColor      = done ? 'var(--green)' : 'var(--red)';
+          scheduleLabel = 'Flexible — anytime each month';
+        } else {
+          const next    = nextDueDate(fc);
+          const diffDay = Math.round((next - today) / 86400000);
+          if (diffDay === 0)      { dueLabel = 'Due today!';                                 dueColor = 'var(--red)'; }
+          else if (diffDay <= 7)  { dueLabel = `Due in ${diffDay} day${diffDay > 1?'s':''}`; dueColor = '#BA7517'; }
+          else                    { dueLabel = `Next due: ${fmtDate(next)}`;                 dueColor = 'var(--text-muted)'; }
+          scheduleLabel = fc.recurrence === 'monthly'
+            ? `Every ${ordinal(parseInt(fc.due_day))} of the month`
+            : (() => { const [m,d] = fc.due_day.split('-').map(Number); return `Every ${new Date(2000,m-1,d).toLocaleDateString('en-US',{month:'long',day:'numeric'})}`; })();
+        }
+
+        const isFlex     = fc.recurrence === 'monthly_flex';
+        const amountStr  = (isFlex ? '~' : '') + fmt(fc.amount);
+        const gc         = fc.group ? groupColor(fc.group) : null;
+        const groupBadge = fc.group
+          ? `<span class="cat-badge" style="background:${gc.bg};color:${gc.text}">${fc.group}</span>` : '';
+
+        return `
+        <div class="fixed-card">
+          <div class="fixed-card-header">
+            <div>
+              <div class="fixed-card-name">${fc.name}</div>
+              <div class="fixed-card-meta">
+                <span class="cat-badge" style="background:${CAT_BG[fc.cat]||'#F1EFE8'};color:${CAT_TEXT[fc.cat]||'#444441'}">${fc.cat}</span>
+                ${groupBadge}
+                <span style="font-size:12px;color:var(--text-muted)">${scheduleLabel}</span>
+              </div>
+            </div>
+            <div class="fixed-card-right">
+              <span class="fixed-card-amount" title="${isFlex ? 'Typical amount (asked each time you pay)' : ''}">${amountStr}</span>
+              <button class="pay-btn" onclick="payFixedCost('${fc.id}')">Pay</button>
+              <button class="del-btn" onclick="deleteFixedCost('${fc.id}')">
+                <i class="ti ti-trash" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
+          <div class="fixed-card-due" style="color:${dueColor}">${dueLabel}</div>
+        </div>`;
+      }).join('');
+    }
+
+    async function addFixedCost() {
+      const name       = document.getElementById('inp-fc-name').value.trim();
+      const amount     = parseAmount(document.getElementById('inp-fc-amount').value);
+      const cat        = document.getElementById('inp-fc-cat').value;
+      const group      = document.getElementById('inp-fc-group').value;
+      const recurrence = document.getElementById('inp-fc-recurrence').value;
+      const dueDayEl   = document.getElementById('inp-fc-due-day');
+
+      if (!name || !amount || amount <= 0 || !cat) {
+        alert('Please fill in name, amount, and category.'); return;
+      }
+      if (recurrence !== 'monthly_flex' && (!dueDayEl || !dueDayEl.value)) {
+        alert('Please select a due day.'); return;
+      }
+
+      const due_day = recurrence === 'monthly' ? dueDayEl.value
+                    : recurrence === 'yearly'  ? dueDayEl.value.slice(5)  // MM-DD for yearly
+                    : '';                                                 // flexible
+
+      try {
+        const row = await api('/api/fixed-costs', 'POST', { name, amount, cat, group, recurrence, due_day });
+        fixedCosts.unshift(row);
+        document.getElementById('inp-fc-name').value   = '';
+        document.getElementById('inp-fc-amount').value = '';
+        renderFixedCosts();
+      } catch (e) { showError('Could not save fixed cost.'); }
+    }
+
+    async function payFixedCost(id) {
+      const fc = fixedCosts.find(f => f.id === id);
+      if (!fc) return;
+
+      let amount = fc.amount;
+      if (fc.recurrence === 'monthly_flex') {
+        const input = prompt(`How much did "${fc.name}" cost this time? (฿)`, fc.amount);
+        if (input === null) return; // cancelled
+        amount = parseAmount(input);
+        if (!amount || amount <= 0) { showError('Please enter a valid amount.'); return; }
+      }
+
+      try {
+        const row = await api('/api/expenses', 'POST', {
+          type: 'expense', desc: fc.name, amount,
+          cat: fc.cat, group: fc.group, date: new Date().toISOString().slice(0, 10)
+        });
+        transactions.unshift(row);
+        renderAll();
+        showSuccess(`Paid ${fc.name} — ${fmt(amount)} logged for today`);
+      } catch (e) { showError('Could not log payment.'); }
+    }
+
+    async function deleteFixedCost(id) {
+      if (!confirm('Delete this fixed cost?')) return;
+      try {
+        await api(`/api/fixed-costs/${id}`, 'DELETE');
+        fixedCosts = fixedCosts.filter(fc => fc.id !== id);
+        renderFixedCosts();
+      } catch (e) { showError('Could not delete fixed cost.'); }
+    }
+
     /* ── Budgets ── */
     function renderBudgetCatOptions() {
       document.getElementById('inp-budget-cat').innerHTML =
@@ -860,6 +1218,13 @@
       const expectedBeforeToday = daysCompleted * dailyRate;
       const carryOver           = spentBeforeToday - expectedBeforeToday; // positive = over plan
       const todayBudget         = dailyRate - carryOver;
+      // Running balance after today's spending — this becomes tomorrow's carry-over
+      const leftoverToday       = todayBudget - spentToday;
+
+      // Recovery plan: spread whatever money is left evenly over the remaining days
+      const remainingDays  = Math.max(totalDays - daysCompleted, 1);            // days left, incl. today
+      const spreadRate     = (b.amount - spentBeforeToday) / remainingDays;     // fair share per day from now
+      const spreadLeftover = spreadRate - spentToday;
 
       const remaining  = b.amount - actualSpent;
       const overBudget = actualSpent > b.amount;
@@ -869,7 +1234,8 @@
       return {
         totalDays, dailyRate, daysElapsed, daysCompleted,
         actualSpent, spentBeforeToday, spentToday,
-        carryOver, todayBudget, remaining,
+        carryOver, todayBudget, leftoverToday, remaining,
+        remainingDays, spreadRate, spreadLeftover,
         overBudget, overPace, pct,
         notStarted, isActive, isFinished
       };
@@ -924,6 +1290,21 @@
             : `${dayLabel} · Today's budget: ${fmt(s.dailyRate)} · Exactly on base plan`;
         }
 
+        let todayBox = '';
+        if (s.isActive) {
+          const over      = s.spreadLeftover < -0.005;
+          const leftColor = over ? 'var(--red)' : 'var(--green)';
+          const leftSign  = s.spreadLeftover >= 0 ? '+' : '−';
+          const leftLabel = over ? "Over today's target" : "Left to spend today";
+          const spentNote = s.spentToday > 0.005 ? ` · spent ${fmt(s.spentToday)} today` : '';
+          const planNote  = ` <span style="color:var(--text-muted);font-size:11px">(new plan: ${fmt(s.spreadRate)}/day · ${s.remainingDays} day${s.remainingDays !== 1 ? 's' : ''} left${spentNote})</span>`;
+          todayBox = `
+          <div class="budget-today">
+            <span class="budget-today-label">${leftLabel}${planNote}</span>
+            <span class="budget-today-value" style="color:${leftColor}">${leftSign}${fmt(s.spreadLeftover)}</span>
+          </div>`;
+        }
+
         return `
         <div class="budget-card">
           <div class="budget-card-header">
@@ -936,7 +1317,9 @@
             </button>
           </div>
           <div class="budget-amounts">
-            <span>Spent <strong>${fmt(s.actualSpent)}</strong> of ${fmt(b.amount)}</span>
+            <span>Spent <strong>${fmt(s.actualSpent)}</strong> of ${fmt(b.amount)} ·
+              <span style="color:${s.remaining >= 0 ? 'var(--green)' : 'var(--red)'};font-weight:600">${s.remaining >= 0 ? fmt(s.remaining) + ' left' : fmt(-s.remaining) + ' over'}</span>
+            </span>
             <span style="color:var(--text-muted)">base plan: ${fmt(s.dailyRate)}/day</span>
           </div>
           <div class="budget-progress-row">
@@ -945,6 +1328,7 @@
             </div>
             <span class="budget-progress-pct">${s.pct}%</span>
           </div>
+          ${todayBox}
           <div class="budget-status ${statusClass}">${statusMsg}</div>
         </div>`;
       }).join('');
@@ -993,6 +1377,7 @@
       renderGroups();
       renderFilterCats();
       renderList();
+      renderFixedCosts();
       renderBudgets();
       renderCharts();
       renderChartFilters();
@@ -1008,10 +1393,15 @@
       document.getElementById('inp-budget-end').value    = d30.toISOString().slice(0, 10);
       renderCatOptions();
       renderBudgetCatOptions();
+      renderFcCatOptions();
+      renderFcDueInput();
       try {
-        [transactions, groups, budgets] = await Promise.all([
-          api('/api/expenses'), api('/api/groups'), api('/api/budgets')
+        let settings;
+        [transactions, groups, budgets, fixedCosts, settings] = await Promise.all([
+          api('/api/expenses'), api('/api/groups'), api('/api/budgets'), api('/api/fixed-costs'), api('/api/settings')
         ]);
+        cycleStartDay = settings.cycle_start_day || 1;
+        renderCycleSelect();
         renderAll();
       } catch (e) {
         const el = document.getElementById('error-banner');
