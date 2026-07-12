@@ -139,6 +139,24 @@ async function route(req, env) {
     return json(row, 201);
   }
   mm = path.match(/^\/api\/budgets\/([^/]+)$/);
+  if (mm && m === 'PUT') {
+    const b = await req.json();
+    if (!b.name || !(Number(b.amount) > 0) || !b.start_date || !b.end_date)
+      return json({ detail: 'name, amount, start_date and end_date are required' }, 422);
+    const row = {
+      id:         mm[1],
+      name:       b.name,
+      amount:     Number(b.amount),
+      cat:        b.cat || 'all',
+      group:      b.group || '',
+      start_date: b.start_date,
+      end_date:   b.end_date,
+    };
+    const res = await DB.prepare('UPDATE budgets SET name=?, amount=?, cat=?, grp=?, start_date=?, end_date=? WHERE id=?')
+      .bind(row.name, row.amount, row.cat, row.group, row.start_date, row.end_date, row.id).run();
+    if (!res.meta.changes) return notFound('Budget not found');
+    return json(row);
+  }
   if (mm && m === 'DELETE') {
     const res = await DB.prepare('DELETE FROM budgets WHERE id = ?').bind(mm[1]).run();
     if (!res.meta.changes) return notFound('Budget not found');

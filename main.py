@@ -200,6 +200,25 @@ def add_budget(b: BudgetIn):
     save_budgets(df)
     return row
 
+@app.put('/api/budgets/{bid}')
+def update_budget(bid: str, b: BudgetIn):
+    df = load_budgets()
+    if not (df['id'] == bid).any():
+        raise HTTPException(status_code=404, detail='Budget not found')
+    idx = df.index[df['id'] == bid][0]
+    df.loc[idx, ['name', 'amount', 'cat', 'group', 'start_date', 'end_date']] = \
+        [b.name, b.amount, b.cat, b.group, b.start_date, b.end_date]
+    save_budgets(df)
+    return {
+        'id':         bid,
+        'name':       b.name,
+        'amount':     b.amount,
+        'cat':        b.cat,
+        'group':      b.group,
+        'start_date': b.start_date,
+        'end_date':   b.end_date,
+    }
+
 @app.delete('/api/budgets/{bid}')
 def del_budget(bid: str):
     df = load_budgets()

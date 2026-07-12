@@ -320,7 +320,7 @@
       <div class="budget-form-section">
         <div class="form-row">
           <input type="text" id="inp-budget-name" placeholder="Budget name (e.g. July Food)" maxlength="50"
-                 onkeydown="if(event.key==='Enter') addBudget()">
+                 onkeydown="if(event.key==='Enter') submitBudget()">
           <input type="text" inputmode="decimal" id="inp-budget-amount" placeholder="Total budget (฿)" oninput="fmtInput(this)">
         </div>
         <div class="form-row">
@@ -339,9 +339,11 @@
             <input type="date" id="inp-budget-end">
           </div>
         </div>
-        <button class="submit-btn income" onclick="addBudget()">
-          <i class="ti ti-plus" aria-hidden="true"></i> Set budget
+        <button class="submit-btn income" id="budget-submit-btn" onclick="submitBudget()">
+          <i class="ti ti-plus" aria-hidden="true"></i> <span id="budget-submit-label">Set budget</span>
         </button>
+        <button class="submit-btn" id="budget-cancel-btn" onclick="cancelEditBudget()"
+                style="display:none;background:var(--surface-1);color:var(--text-secondary);margin-left:8px;">Cancel</button>
       </div>
       <div class="budget-cards" id="budget-cards"></div>
     </div>
@@ -1312,9 +1314,14 @@
               <div class="budget-card-name">${b.name}</div>
               <div class="budget-card-meta">${filterStr} · ${fmtD(b.start_date)} – ${fmtD(b.end_date)}</div>
             </div>
-            <button class="del-btn" onclick="deleteBudget('${b.id}')" aria-label="Delete">
-              <i class="ti ti-trash" aria-hidden="true"></i>
-            </button>
+            <div style="display:flex;gap:4px;flex-shrink:0;">
+              <button class="del-btn" onclick="editBudget('${b.id}')" aria-label="Edit">
+                <i class="ti ti-pencil" aria-hidden="true"></i>
+              </button>
+              <button class="del-btn" onclick="deleteBudget('${b.id}')" aria-label="Delete">
+                <i class="ti ti-trash" aria-hidden="true"></i>
+              </button>
+            </div>
           </div>
           <div class="budget-amounts">
             <span>Spent <strong>${fmt(s.actualSpent)}</strong> of ${fmt(b.amount)} ·
@@ -1334,7 +1341,39 @@
       }).join('');
     }
 
-    async function addBudget() {
+    let editingBudgetId = null;
+
+    function clearBudgetForm() {
+      document.getElementById('inp-budget-name').value   = '';
+      document.getElementById('inp-budget-amount').value = '';
+      document.getElementById('inp-budget-cat').value    = 'all';
+      document.getElementById('inp-budget-group').value  = '';
+    }
+
+    function editBudget(id) {
+      const b = budgets.find(x => x.id === id);
+      if (!b) return;
+      editingBudgetId = id;
+      document.getElementById('inp-budget-name').value   = b.name;
+      document.getElementById('inp-budget-amount').value = Number(b.amount).toLocaleString('en-US');
+      document.getElementById('inp-budget-cat').value    = b.cat || 'all';
+      document.getElementById('inp-budget-group').value  = b.group || '';
+      document.getElementById('inp-budget-start').value  = b.start_date;
+      document.getElementById('inp-budget-end').value    = b.end_date;
+      document.getElementById('budget-submit-label').textContent = 'Update budget';
+      document.getElementById('budget-cancel-btn').style.display = 'inline-flex';
+      document.getElementById('inp-budget-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('inp-budget-name').focus();
+    }
+
+    function cancelEditBudget() {
+      editingBudgetId = null;
+      clearBudgetForm();
+      document.getElementById('budget-submit-label').textContent = 'Set budget';
+      document.getElementById('budget-cancel-btn').style.display = 'none';
+    }
+
+    async function submitBudget() {
       const name   = document.getElementById('inp-budget-name').value.trim();
       const amount = parseAmount(document.getElementById('inp-budget-amount').value);
       const cat    = document.getElementById('inp-budget-cat').value;
@@ -1350,11 +1389,17 @@
         alert('End date must be on or after start date.');
         return;
       }
+      const payload = { name, amount, cat, group, start_date: start, end_date: end };
       try {
-        const row = await api('/api/budgets', 'POST', { name, amount, cat, group, start_date: start, end_date: end });
-        budgets.unshift(row);
-        document.getElementById('inp-budget-name').value   = '';
-        document.getElementById('inp-budget-amount').value = '';
+        if (editingBudgetId) {
+          const row = await api(`/api/budgets/${editingBudgetId}`, 'PUT', payload);
+          budgets = budgets.map(b => b.id === editingBudgetId ? row : b);
+          cancelEditBudget();
+        } else {
+          const row = await api('/api/budgets', 'POST', payload);
+          budgets.unshift(row);
+          clearBudgetForm();
+        }
         renderBudgets();
       } catch (e) {
         showError('Could not save budget.');
@@ -1366,6 +1411,7 @@
       try {
         await api(`/api/budgets/${id}`, 'DELETE');
         budgets = budgets.filter(b => b.id !== id);
+        if (editingBudgetId === id) cancelEditBudget();
         renderBudgets();
       } catch (e) {
         showError('Could not delete budget.');
