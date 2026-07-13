@@ -209,6 +209,25 @@ async function route(req, env, uid) {
     return json({ name: b.name }, 201);
   }
   mm = path.match(/^\/api\/groups\/([^/]+)$/);
+  if (mm && m === 'PUT') {
+    const oldName = decodeURIComponent(mm[1]);
+    const b = await req.json();
+    const newName = (b.name || '').trim();
+    if (!newName) return json({ detail: 'name is required' }, 422);
+    const exists = await DB.prepare('SELECT 1 FROM groups WHERE user_id = ? AND name = ?').bind(uid, oldName).first();
+    if (!exists) return notFound('Group not found');
+    if (newName !== oldName) {
+      const dup = await DB.prepare('SELECT 1 FROM groups WHERE user_id = ? AND name = ?').bind(uid, newName).first();
+      if (dup) return json({ detail: 'Group already exists' }, 409);
+      await DB.batch([
+        DB.prepare('UPDATE groups      SET name = ? WHERE user_id = ? AND name = ?').bind(newName, uid, oldName),
+        DB.prepare('UPDATE expenses    SET grp  = ? WHERE user_id = ? AND grp  = ?').bind(newName, uid, oldName),
+        DB.prepare('UPDATE budgets     SET grp  = ? WHERE user_id = ? AND grp  = ?').bind(newName, uid, oldName),
+        DB.prepare('UPDATE fixed_costs SET grp  = ? WHERE user_id = ? AND grp  = ?').bind(newName, uid, oldName),
+      ]);
+    }
+    return json({ name: newName });
+  }
   if (mm && m === 'DELETE') {
     const name = decodeURIComponent(mm[1]);
     await DB.batch([

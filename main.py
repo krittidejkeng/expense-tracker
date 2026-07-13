@@ -190,6 +190,22 @@ def add_group(g: GroupIn):
     save_grp(pd.concat([df, pd.DataFrame([{'name': g.name}])], ignore_index=True))
     return {'name': g.name}
 
+@app.put('/api/groups/{name}')
+def rename_group(name: str, g: GroupIn):
+    new = g.name.strip()
+    grp = load_grp()
+    if name not in grp['name'].values:
+        raise HTTPException(status_code=404, detail='Group not found')
+    if new and new != name:
+        if new in grp['name'].values:
+            raise HTTPException(status_code=409, detail='Group already exists')
+        grp.loc[grp['name'] == name, 'name'] = new
+        save_grp(grp)
+        exp = load_exp();     exp.loc[exp['group'] == name, 'group'] = new;   save_exp(exp)
+        bud = load_budgets(); bud.loc[bud['group'] == name, 'group'] = new;   save_budgets(bud)
+        fc  = load_fc();      fc.loc[fc['group']  == name, 'group'] = new;    save_fc(fc)
+    return {'name': new}
+
 @app.delete('/api/groups/{name}')
 def del_group(name: str):
     df = load_exp()

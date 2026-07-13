@@ -635,14 +635,36 @@
       }
     }
 
+    async function renameGroup(oldName) {
+      const input = prompt('Rename group:', oldName);
+      if (input === null) return;
+      const newName = input.trim();
+      if (!newName || newName === oldName) return;
+      try {
+        await api(`/api/groups/${encodeURIComponent(oldName)}`, 'PUT', { name: newName });
+        groups       = groups.map(g => g === oldName ? newName : g);
+        transactions = transactions.map(t => t.group === oldName ? { ...t, group: newName } : t);
+        budgets      = budgets.map(b => b.group === oldName ? { ...b, group: newName } : b);
+        fixedCosts   = fixedCosts.map(f => f.group === oldName ? { ...f, group: newName } : f);
+        renderGroups();
+        renderAll();
+      } catch (e) {
+        showError(e.message === 'Group already exists' ? 'A group with that name already exists.' : 'Could not rename group.');
+      }
+    }
+
     function renderGroups() {
       const el = document.getElementById('groups-pills');
       el.innerHTML = groups.length
         ? groups.map(g => {
-            const c = groupColor(g);
+            const c  = groupColor(g);
+            const gj = g.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
             return `<span class="group-pill" style="background:${c.bg};color:${c.text}">
               ${g}
-              <button class="pill-del" onclick="deleteGroup('${g.replace(/'/g,"\\'")}')">
+              <button class="pill-del" onclick="renameGroup('${gj}')" aria-label="Rename" title="Rename">
+                <i class="ti ti-pencil" aria-hidden="true"></i>
+              </button>
+              <button class="pill-del" onclick="deleteGroup('${gj}')" aria-label="Delete" title="Delete">
                 <i class="ti ti-x" aria-hidden="true"></i>
               </button>
             </span>`;
