@@ -127,6 +127,26 @@ def index():
     return FileResponse(os.path.join(BASE_DIR, 'index.html'))
 
 
+# Auth stubs for LOCAL dev only — the real multi-user auth lives in the
+# Cloudflare Worker (cloudflare/src/index.js). Locally you are always "logged in"
+# as a single user, so the frontend's login screen is bypassed.
+@app.get('/api/me')
+def me():
+    return {'username': 'local'}
+
+@app.post('/api/login')
+def local_login():
+    return {'username': 'local'}
+
+@app.post('/api/signup', status_code=201)
+def local_signup():
+    return {'username': 'local'}
+
+@app.post('/api/logout')
+def local_logout():
+    return {'ok': True}
+
+
 @app.get('/api/expenses')
 def get_expenses():
     df = load_exp()
