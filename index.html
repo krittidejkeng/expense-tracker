@@ -534,9 +534,7 @@
       const sel = document.getElementById('cycle-start-day');
       sel.innerHTML = Array.from({ length: 31 }, (_, i) => {
         const d = i + 1;
-        const label = d === 1 ? '1st (calendar month)'
-          : d >= 29 ? `${ordinal(d)} (or last day)`
-          : ordinal(d);
+        const label = d === 1 ? '1st (calendar month)' : ordinal(d);
         return `<option value="${d}">${label}</option>`;
       }).join('');
       sel.value = String(cycleStartDay);
