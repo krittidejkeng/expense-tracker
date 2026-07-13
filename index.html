@@ -297,6 +297,10 @@
       <div class="form-row">
         <input type="date" id="inp-date">
       </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);margin-bottom:14px;cursor:pointer;">
+        <input type="checkbox" id="inp-exclude" style="width:16px;height:16px;flex-shrink:0;">
+        Don't count in my totals <span style="color:var(--text-muted);font-size:12px;">(still counts toward budgets)</span>
+      </label>
       <button class="submit-btn expense" id="submit-btn" onclick="addTransaction()">
         <i class="ti ti-plus" aria-hidden="true"></i> <span id="submit-label">Add expense</span>
       </button>
@@ -683,23 +687,25 @@
 
     /* ── Transaction CRUD ── */
     async function addTransaction() {
-      const desc   = document.getElementById('inp-desc').value.trim();
-      const amount = parseAmount(document.getElementById('inp-amount').value);
-      const cat    = document.getElementById('inp-cat').value;
-      const group  = document.getElementById('inp-group').value;
-      const date   = document.getElementById('inp-date').value;
+      const desc    = document.getElementById('inp-desc').value.trim();
+      const amount  = parseAmount(document.getElementById('inp-amount').value);
+      const cat     = document.getElementById('inp-cat').value;
+      const group   = document.getElementById('inp-group').value;
+      const date    = document.getElementById('inp-date').value;
+      const exclude = document.getElementById('inp-exclude').checked;
 
       if (!desc || !amount || amount <= 0 || !cat || !date) {
         alert('Please fill in description, amount, category, and date.');
         return;
       }
       try {
-        const row = await api('/api/expenses', 'POST', { type: currentType, desc, amount, cat, group, date });
+        const row = await api('/api/expenses', 'POST', { type: currentType, desc, amount, cat, group, date, exclude });
         transactions.unshift(row);
-        document.getElementById('inp-desc').value   = '';
-        document.getElementById('inp-amount').value = '';
-        document.getElementById('inp-cat').value    = '';
-        document.getElementById('inp-group').value  = '';
+        document.getElementById('inp-desc').value     = '';
+        document.getElementById('inp-amount').value   = '';
+        document.getElementById('inp-cat').value      = '';
+        document.getElementById('inp-group').value    = '';
+        document.getElementById('inp-exclude').checked = false;
         renderAll();
       } catch (e) {
         showError('Could not save. Is the server running?');
@@ -792,7 +798,8 @@
 
       el.innerHTML = keys.map((key, idx) => {
         const grpRows = byKey[key].slice().sort((a, b) => b.date.localeCompare(a.date));
-        const net     = grpRows.reduce((s, t) => s + (t.type === 'income' ? t.amount : -t.amount), 0);
+        // per-day net counts only transactions that count in totals (excludes flagged ones)
+        const net     = grpRows.filter(t => !t.exclude).reduce((s, t) => s + (t.type === 'income' ? t.amount : -t.amount), 0);
         const netSign = net >= 0 ? '+' : '−';
         const netColor = net >= 0 ? 'var(--green)' : 'var(--red)';
 
@@ -806,14 +813,18 @@
           const dRow  = new Date(t.date + 'T12:00:00');
           const dateStr = listGroupBy === 'day' ? ''
             : `<span class="exp-date">${dRow.getDate()} ${dRow.toLocaleDateString('en-US', { month: 'short' })}</span>`;
+          const exMark = t.exclude
+            ? `<span title="Not counted in your totals" style="color:var(--text-muted);font-size:13px;display:inline-flex;align-items:center;flex-shrink:0;"><i class="ti ti-eye-off" aria-hidden="true"></i></span>`
+            : '';
           return `
-          <div class="exp-item">
+          <div class="exp-item" style="${t.exclude ? 'opacity:0.6;' : ''}">
             <span class="type-dot ${t.type}"></span>
             <div class="exp-badges">
               <span class="cat-badge" style="background:${CAT_BG[t.cat]||'#F1EFE8'};color:${CAT_TEXT[t.cat]||'#444441'}">${t.cat}</span>
               ${groupBadge}
             </div>
             <span class="exp-desc">${t.desc}</span>
+            ${exMark}
             ${dateStr}
             <span class="exp-amount ${t.type}">${sign}${fmt(t.amount)}</span>
             <button class="del-btn" onclick="deleteTransaction('${t.id}')" aria-label="Delete">
@@ -843,14 +854,16 @@
     }
 
     function renderMetrics() {
-      const totalIn  = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-      const totalOut = transactions.filter(t => t.type !== 'income').reduce((s, t) => s + t.amount, 0);
+      // Excluded transactions ("don't count in totals") are left out of every metric.
+      const counted  = transactions.filter(t => !t.exclude);
+      const totalIn  = counted.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const totalOut = counted.filter(t => t.type !== 'income').reduce((s, t) => s + t.amount, 0);
       const balance  = totalIn - totalOut;
 
       const cyc = currentCycle();
       const inCycle  = t => t.date >= cyc.startStr && t.date < cyc.endStr;
-      const monthIn  = transactions.filter(t => t.type === 'income' && inCycle(t)).reduce((s, t) => s + t.amount, 0);
-      const monthOut = transactions.filter(t => t.type !== 'income' && inCycle(t)).reduce((s, t) => s + t.amount, 0);
+      const monthIn  = counted.filter(t => t.type === 'income' && inCycle(t)).reduce((s, t) => s + t.amount, 0);
+      const monthOut = counted.filter(t => t.type !== 'income' && inCycle(t)).reduce((s, t) => s + t.amount, 0);
       const monthNet = monthIn - monthOut;
 
       document.getElementById('m-in').textContent      = fmt(totalIn);
@@ -893,7 +906,7 @@
 
     function renderCharts() {
       const expCats = {}, incCats = {}, grpTotals = {};
-      transactions.forEach(t => {
+      transactions.filter(t => !t.exclude).forEach(t => {
         if (t.type === 'income') incCats[t.cat] = (incCats[t.cat] || 0) + t.amount;
         else                     expCats[t.cat] = (expCats[t.cat] || 0) + t.amount;
         if (t.group) grpTotals[t.group] = (grpTotals[t.group] || 0) + t.amount;
@@ -989,7 +1002,7 @@
       canvas.style.display   = 'block';
       emptyMsg.style.display = 'none';
 
-      let filtered = transactions;
+      let filtered = transactions.filter(t => !t.exclude);
       if (chartFilterType)  filtered = filtered.filter(t => t.type  === chartFilterType);
       if (chartFilterCat)   filtered = filtered.filter(t => t.cat   === chartFilterCat);
       if (chartFilterGroup) filtered = filtered.filter(t => t.group === chartFilterGroup);

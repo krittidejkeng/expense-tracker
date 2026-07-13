@@ -24,7 +24,7 @@ EXPENSES_CSV = os.path.join(DATA_DIR, 'expenses.csv')
 GROUPS_CSV   = os.path.join(DATA_DIR, 'groups.csv')
 BUDGETS_CSV  = os.path.join(DATA_DIR, 'budgets.csv')
 FC_CSV       = os.path.join(DATA_DIR, 'fixed_costs.csv')
-EXP_COLS     = ['id', 'type', 'desc', 'amount', 'cat', 'group', 'date']
+EXP_COLS     = ['id', 'type', 'desc', 'amount', 'cat', 'group', 'date', 'exclude']
 GRP_COLS     = ['name']
 BUDGET_COLS  = ['id', 'name', 'amount', 'cat', 'group', 'start_date', 'end_date']
 FC_COLS      = ['id', 'name', 'amount', 'cat', 'group', 'recurrence', 'due_day']
@@ -41,6 +41,10 @@ def load_exp() -> pd.DataFrame:
     df['amount'] = df['amount'].astype(float)
     df['group']  = df['group'].fillna('')
     df['type']   = df['type'].fillna('expense') if 'type' in df.columns else 'expense'
+    if 'exclude' in df.columns:
+        df['exclude'] = df['exclude'].fillna('False').astype(str).isin(['True', 'true', '1'])
+    else:
+        df['exclude'] = False
     return df
 
 def save_exp(df: pd.DataFrame) -> None:
@@ -93,11 +97,12 @@ def save_settings(s: dict) -> None:
 
 class ExpenseIn(BaseModel):
     type:   str = 'expense'
-    desc:   str
-    amount: float
-    cat:    str
-    group:  str = ''
-    date:   str
+    desc:    str
+    amount:  float
+    cat:     str
+    group:   str = ''
+    date:    str
+    exclude: bool = False
 
 class GroupIn(BaseModel):
     name: str
@@ -157,13 +162,14 @@ def get_expenses():
 def add_expense(e: ExpenseIn):
     df  = load_exp()
     row = {
-        'id':     str(int(time.time() * 1000)),
-        'type':   e.type,
-        'desc':   e.desc,
-        'amount': e.amount,
-        'cat':    e.cat,
-        'group':  e.group,
-        'date':   e.date,
+        'id':      str(int(time.time() * 1000)),
+        'type':    e.type,
+        'desc':    e.desc,
+        'amount':  e.amount,
+        'cat':     e.cat,
+        'group':   e.group,
+        'date':    e.date,
+        'exclude': e.exclude,
     }
     df = pd.concat([pd.DataFrame([row]), df], ignore_index=True)
     save_exp(df)

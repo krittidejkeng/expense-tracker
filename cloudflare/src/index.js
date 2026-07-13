@@ -143,13 +143,13 @@ async function logout(req, env) {
 /* ── data queries (scoped by user_id) ── */
 
 const SEL = {
-  expenses:    'SELECT id, type, descr AS "desc", amount, cat, grp AS "group", date FROM expenses WHERE user_id = ? ORDER BY date DESC, id DESC',
+  expenses:    'SELECT id, type, descr AS "desc", amount, cat, grp AS "group", date, exclude_totals AS "exclude" FROM expenses WHERE user_id = ? ORDER BY date DESC, id DESC',
   budgets:     'SELECT id, name, amount, cat, grp AS "group", start_date, end_date FROM budgets WHERE user_id = ? ORDER BY id DESC',
   fixed_costs: 'SELECT id, name, amount, cat, grp AS "group", recurrence, due_day FROM fixed_costs WHERE user_id = ? ORDER BY id DESC',
 };
 
 const EXPORTS = {
-  'expenses.csv':    { sql: SEL.expenses,    cols: ['id', 'type', 'desc', 'amount', 'cat', 'group', 'date'] },
+  'expenses.csv':    { sql: SEL.expenses,    cols: ['id', 'type', 'desc', 'amount', 'cat', 'group', 'date', 'exclude'] },
   'groups.csv':      { sql: 'SELECT name FROM groups WHERE user_id = ? ORDER BY name', cols: ['name'] },
   'budgets.csv':     { sql: SEL.budgets,     cols: ['id', 'name', 'amount', 'cat', 'group', 'start_date', 'end_date'] },
   'fixed_costs.csv': { sql: SEL.fixed_costs, cols: ['id', 'name', 'amount', 'cat', 'group', 'recurrence', 'due_day'] },
@@ -183,9 +183,10 @@ async function route(req, env, uid) {
     if (!b.desc || !(Number(b.amount) > 0) || !b.cat || !b.date)
       return json({ detail: 'desc, amount, cat and date are required' }, 422);
     const row = { id: Date.now().toString(), type: b.type || 'expense', desc: b.desc,
-                  amount: Number(b.amount), cat: b.cat, group: b.group || '', date: b.date };
-    await DB.prepare('INSERT INTO expenses (id, user_id, type, descr, amount, cat, grp, date) VALUES (?,?,?,?,?,?,?,?)')
-      .bind(row.id, uid, row.type, row.desc, row.amount, row.cat, row.group, row.date).run();
+                  amount: Number(b.amount), cat: b.cat, group: b.group || '', date: b.date,
+                  exclude: b.exclude ? 1 : 0 };
+    await DB.prepare('INSERT INTO expenses (id, user_id, type, descr, amount, cat, grp, date, exclude_totals) VALUES (?,?,?,?,?,?,?,?,?)')
+      .bind(row.id, uid, row.type, row.desc, row.amount, row.cat, row.group, row.date, row.exclude).run();
     return json(row, 201);
   }
   let mm = path.match(/^\/api\/expenses\/([^/]+)$/);

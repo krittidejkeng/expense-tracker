@@ -17,14 +17,15 @@ CREATE TABLE IF NOT EXISTS sessions (
 );
 
 CREATE TABLE IF NOT EXISTS expenses (
-  id      TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL DEFAULT '',
-  type    TEXT NOT NULL DEFAULT 'expense',
-  descr   TEXT NOT NULL,
-  amount  REAL NOT NULL,
-  cat     TEXT NOT NULL,
-  grp     TEXT NOT NULL DEFAULT '',
-  date    TEXT NOT NULL
+  id             TEXT PRIMARY KEY,
+  user_id        TEXT NOT NULL DEFAULT '',
+  type           TEXT NOT NULL DEFAULT 'expense',
+  descr          TEXT NOT NULL,
+  amount         REAL NOT NULL,
+  cat            TEXT NOT NULL,
+  grp            TEXT NOT NULL DEFAULT '',
+  date           TEXT NOT NULL,
+  exclude_totals INTEGER NOT NULL DEFAULT 0  -- 1 = don't count in Total/Balance, still counts in budgets
 );
 
 CREATE TABLE IF NOT EXISTS groups (
