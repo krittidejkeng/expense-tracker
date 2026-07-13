@@ -278,7 +278,7 @@ def get_settings():
 
 @app.put('/api/settings')
 def put_settings(s: SettingsIn):
-    day = min(max(s.cycle_start_day, 1), 28)  # clamp to a day every month has
+    day = min(max(s.cycle_start_day, 1), 31)  # 29-31 fall back to each month's last day in the cycle math
     settings = {'cycle_start_day': day}
     save_settings(settings)
     return settings

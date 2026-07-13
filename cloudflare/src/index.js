@@ -199,7 +199,7 @@ async function route(req, env) {
   }
   if (path === '/api/settings' && m === 'PUT') {
     const b   = await req.json();
-    const day = Math.min(Math.max(parseInt(b.cycle_start_day) || 1, 1), 28);
+    const day = Math.min(Math.max(parseInt(b.cycle_start_day) || 1, 1), 31);
     await DB.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES ('cycle_start_day', ?)")
       .bind(String(day)).run();
     return json({ cycle_start_day: day });
