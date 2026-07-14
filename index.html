@@ -765,8 +765,8 @@
     }
 
     function friendlyDate(dateStr) {
-      const today = new Date().toISOString().slice(0, 10);
-      const yest  = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      const today = localYMD(new Date());
+      const yest  = localYMD(new Date(Date.now() - 86400000));
       if (dateStr === today) return 'Today';
       if (dateStr === yest)  return 'Yesterday';
       const d = new Date(dateStr + 'T12:00:00');
@@ -973,7 +973,7 @@
       const d = new Date(dateStr + 'T12:00:00');
       const day = d.getDay();
       d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
-      return d.toISOString().slice(0, 10);
+      return localYMD(d);
     }
 
     function formatKey(key) {
@@ -1113,7 +1113,7 @@
     }
 
     function fcDoneThisMonth(fc) {
-      const ym = new Date().toISOString().slice(0, 7);
+      const ym = localYMD(new Date()).slice(0, 7);
       return transactions.some(t => t.type === 'expense' && t.desc === fc.name && t.date.startsWith(ym));
     }
 
@@ -1230,7 +1230,7 @@
       try {
         const row = await api('/api/expenses', 'POST', {
           type: 'expense', desc: fc.name, amount,
-          cat: fc.cat, group: fc.group, date: new Date().toISOString().slice(0, 10)
+          cat: fc.cat, group: fc.group, date: localYMD(new Date())
         });
         transactions.unshift(row);
         renderAll();
@@ -1264,7 +1264,7 @@
 
     function calcBudget(b) {
       const MS       = 86400000;
-      const todayStr = new Date().toISOString().slice(0, 10);
+      const todayStr = localYMD(new Date());
       const start    = new Date(b.start_date + 'T00:00:00');
       const end      = new Date(b.end_date   + 'T00:00:00');
       const today    = new Date(todayStr      + 'T00:00:00');
@@ -1347,7 +1347,7 @@
         const dayLabel  = `Day ${s.daysElapsed}/${s.totalDays}`;
 
         if (s.notStarted) {
-          const daysUntil = Math.round((new Date(b.start_date + 'T00:00:00') - new Date(new Date().toISOString().slice(0,10) + 'T00:00:00')) / 86400000);
+          const daysUntil = Math.round((new Date(b.start_date + 'T00:00:00') - new Date(localYMD(new Date()) + 'T00:00:00')) / 86400000);
           statusClass = 'not-started';
           statusMsg = `Starts in ${daysUntil} day${daysUntil !== 1 ? 's' : ''} · Target: ${fmt(s.dailyRate)}/day`;
         } else if (s.isFinished) {
@@ -1577,11 +1577,11 @@
       document.getElementById('auth-overlay').style.display = 'none';
       document.getElementById('app-container').style.display = 'block';
 
-      const today = new Date().toISOString().slice(0, 10);
+      const today = localYMD(new Date());
       document.getElementById('inp-date').value          = today;
       document.getElementById('inp-budget-start').value  = today;
       const d30 = new Date(); d30.setDate(d30.getDate() + 29);
-      document.getElementById('inp-budget-end').value    = d30.toISOString().slice(0, 10);
+      document.getElementById('inp-budget-end').value    = localYMD(d30);
       renderCatOptions();
       renderBudgetCatOptions();
       renderFcCatOptions();
